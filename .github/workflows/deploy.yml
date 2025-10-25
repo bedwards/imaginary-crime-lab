@@ -41,8 +41,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
 
       - name: Install dependencies
         working-directory: ./frontend
@@ -99,45 +97,3 @@ jobs:
             echo "❌ Deployment failed. Check logs above."
             exit 1
           fi
-
-# ============================================================================
-# GitHub Secrets Required
-# ============================================================================
-#
-# Go to: Repository Settings → Secrets and variables → Actions → New secret
-#
-# Required secrets:
-# - CLOUDFLARE_API_TOKEN: Cloudflare API token with Workers edit permissions
-# - CLOUDFLARE_ACCOUNT_ID: Your Cloudflare account ID
-# - NEON_DATABASE_URL: Postgres connection string
-# - MONGODB_URI: MongoDB connection string
-# - SHOPIFY_STOREFRONT_TOKEN: Shopify Storefront API token
-# - SHOPIFY_ADMIN_TOKEN: Shopify Admin API token
-#
-# The GITHUB_TOKEN is automatically provided by GitHub Actions
-#
-# ============================================================================
-# Setup Instructions
-# ============================================================================
-#
-# 1. Enable GitHub Pages:
-#    - Repository Settings → Pages
-#    - Source: Deploy from a branch
-#    - Branch: gh-pages / (root)
-#
-# 2. Add secrets to repository:
-#    - Settings → Secrets and variables → Actions
-#    - Add each secret listed above
-#
-# 3. Update workflow variables:
-#    - Edit VITE_API_BASE with your Worker URL
-#    - Edit cname if using custom domain
-#    - Update notification URLs
-#
-# 4. Push to main branch to trigger deployment
-#
-# 5. Monitor deployment:
-#    - Actions tab in GitHub repository
-#    - Check logs for each job
-#
-# ============================================================================
