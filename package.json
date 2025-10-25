@@ -5,6 +5,11 @@
   "main": "worker.js",
   "type": "module",
   "devDependencies": {
+    "@eslint/js": "^9.38.0",
+    "eslint": "^9.38.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-import": "^2.32.0",
+    "globals": "^16.4.0",
     "wrangler": "^3.0.0"
   },
   "scripts": {

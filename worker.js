@@ -8,7 +8,7 @@ const CORS_HEADERS = {
 };
 
 export default {
-  async fetch(request, env, ctx) {
+  async fetch(request, env, _) {
     // Handle CORS preflight
     if (request.method === 'OPTIONS') {
       return new Response(null, { headers: CORS_HEADERS });
@@ -22,33 +22,33 @@ export default {
       if (path === '/cases') {
         return await handleGetCases(env);
       }
-      
+
       if (path === '/evidence') {
         return await handleGetEvidence(env);
       }
-      
+
       if (path === '/metrics') {
         return await handleGetMetrics(env);
       }
-      
+
       if (path === '/activity' && request.method === 'POST') {
         return await handlePostActivity(request, env);
       }
-      
+
       if (path === '/activity/stream') {
         return await handleActivityStream(env);
       }
-      
+
       if (path === '/checkout' && request.method === 'POST') {
         return await handleCreateCheckout(request, env);
       }
-      
+
       if (path === '/webhook/order') {
         return await handleOrderWebhook(request, env);
       }
-      
+
       return jsonResponse({ error: 'Not found' }, 404);
-      
+
     } catch (error) {
       console.error('Worker error:', error);
       return jsonResponse({ error: error.message }, 500);
@@ -70,11 +70,11 @@ async function queryNeon(env, query, params = []) {
       database_url: env.NEON_DATABASE_URL,
     }),
   });
-  
+
   if (!response.ok) {
     throw new Error(`Neon query failed: ${response.statusText}`);
   }
-  
+
   const result = await response.json();
   return result.rows || [];
 }
@@ -83,7 +83,7 @@ async function queryNeon(env, query, params = []) {
 async function queryMongoDB(env, collection, operation, document = {}) {
   const url = new URL(env.MONGODB_URI);
   const database = url.pathname.slice(1) || 'crimelab';
-  
+
   const response = await fetch(`${env.MONGODB_DATA_API}/action/${operation}`, {
     method: 'POST',
     headers: {
@@ -97,11 +97,11 @@ async function queryMongoDB(env, collection, operation, document = {}) {
       document,
     }),
   });
-  
+
   if (!response.ok) {
     throw new Error(`MongoDB operation failed: ${response.statusText}`);
   }
-  
+
   return response.json();
 }
 
@@ -130,7 +130,7 @@ async function handleGetCases(env) {
       }
     ]);
   }
-  
+
   const result = await queryNeon(env, `
     SELECT 
       c.id,
@@ -145,7 +145,7 @@ async function handleGetCases(env) {
     GROUP BY c.id
     ORDER BY c.case_number
   `);
-  
+
   return jsonResponse(result);
 }
 
@@ -155,12 +155,12 @@ async function handleGetEvidence(env) {
   const cache = caches.default;
   const cacheKey = new Request('https://cache/evidence', { method: 'GET' });
   let response = await cache.match(cacheKey);
-  
+
   if (response) {
     const data = await response.json();
     return jsonResponse(data, 200, { 'X-Cache': 'HIT' });
   }
-  
+
   // Return mock data if Shopify is not configured
   if (!env.SHOPIFY_STOREFRONT_TOKEN) {
     const mockEvidence = [
@@ -172,7 +172,7 @@ async function handleGetEvidence(env) {
     ];
     return jsonResponse(mockEvidence, 200, { 'X-Cache': 'MOCK' });
   }
-  
+
   // Fetch from Shopify
   const query = `
     query {
@@ -199,7 +199,7 @@ async function handleGetEvidence(env) {
       }
     }
   `;
-  
+
   const shopifyResponse = await fetch(
     `https://${env.SHOPIFY_STORE_DOMAIN}/api/2024-10/graphql.json`,
     {
@@ -211,13 +211,13 @@ async function handleGetEvidence(env) {
       body: JSON.stringify({ query }),
     }
   );
-  
+
   if (!shopifyResponse.ok) {
     return jsonResponse({ error: 'Failed to fetch from Shopify' }, 500);
   }
-  
+
   const shopifyData = await shopifyResponse.json();
-  
+
   // Transform to our format
   const evidence = shopifyData.data.products.edges.map(({ node }) => ({
     id: node.id.split('/').pop(),
@@ -226,7 +226,7 @@ async function handleGetEvidence(env) {
     price: node.priceRange.minVariantPrice.amount,
     variant_id: node.variants.edges[0].node.id,
   }));
-  
+
   // Cache for 5 minutes
   const cacheResponse = new Response(JSON.stringify(evidence), {
     headers: {
@@ -235,7 +235,7 @@ async function handleGetEvidence(env) {
     },
   });
   await cache.put(cacheKey, cacheResponse.clone());
-  
+
   return jsonResponse(evidence, 200, { 'X-Cache': 'MISS' });
 }
 
@@ -250,13 +250,13 @@ async function handleGetMetrics(env) {
       worker_timestamp: new Date().toISOString(),
     });
   }
-  
+
   const [cases, solved, evidence] = await Promise.all([
     queryNeon(env, 'SELECT COUNT(*) as count FROM cases'),
     queryNeon(env, 'SELECT COUNT(*) as count FROM cases WHERE solved_at IS NOT NULL'),
     queryNeon(env, 'SELECT COUNT(DISTINCT evidence_id) as count FROM case_evidence'),
   ]);
-  
+
   return jsonResponse({
     total_cases: parseInt(cases[0]?.count || 0),
     solved_cases: parseInt(solved[0]?.count || 0),
@@ -268,26 +268,26 @@ async function handleGetMetrics(env) {
 // Post activity to MongoDB
 async function handlePostActivity(request, env) {
   const activity = await request.json();
-  
+
   // If MongoDB is not configured, just log and return success
   if (!env.MONGODB_API_KEY) {
     console.log('Activity:', activity);
     return jsonResponse({ success: true, mock: true });
   }
-  
+
   await queryMongoDB(env, 'activities', 'insertOne', {
     ...activity,
     timestamp: new Date(),
     worker_id: crypto.randomUUID(),
   });
-  
+
   return jsonResponse({ success: true });
 }
 
 // Server-Sent Events for live activity
-async function handleActivityStream(env) {
+async function handleActivityStream(_) {
   const encoder = new TextEncoder();
-  
+
   // Create a simple SSE stream with mock data
   const stream = new ReadableStream({
     start(controller) {
@@ -296,7 +296,7 @@ async function handleActivityStream(env) {
         type: 'connection_established',
         timestamp: new Date().toISOString()
       })}\n\n`));
-      
+
       // Send periodic updates
       const interval = setInterval(() => {
         const mockActivity = {
@@ -306,7 +306,7 @@ async function handleActivityStream(env) {
         };
         controller.enqueue(encoder.encode(`data: ${JSON.stringify(mockActivity)}\n\n`));
       }, 5000);
-      
+
       // Cleanup after 5 minutes
       setTimeout(() => {
         clearInterval(interval);
@@ -314,7 +314,7 @@ async function handleActivityStream(env) {
       }, 300000);
     },
   });
-  
+
   return new Response(stream, {
     headers: {
       'Content-Type': 'text/event-stream',
@@ -328,7 +328,7 @@ async function handleActivityStream(env) {
 // Create Shopify checkout
 async function handleCreateCheckout(request, env) {
   const { evidence_ids, case_ids } = await request.json();
-  
+
   // Return mock checkout URL if Shopify is not configured
   if (!env.SHOPIFY_STOREFRONT_TOKEN) {
     return jsonResponse({
@@ -336,12 +336,12 @@ async function handleCreateCheckout(request, env) {
       mock: true
     });
   }
-  
+
   // Get evidence details
   const evidenceResponse = await handleGetEvidence(env);
   const allEvidence = await evidenceResponse.json();
   const selectedEvidence = allEvidence.filter(e => evidence_ids.includes(e.id));
-  
+
   // Create checkout via Shopify Storefront API
   const mutation = `
     mutation checkoutCreate($input: CheckoutCreateInput!) {
@@ -357,12 +357,12 @@ async function handleCreateCheckout(request, env) {
       }
     }
   `;
-  
+
   const lineItems = selectedEvidence.map(e => ({
     variantId: e.variant_id,
     quantity: 1,
   }));
-  
+
   const shopifyResponse = await fetch(
     `https://${env.SHOPIFY_STORE_DOMAIN}/api/2024-10/graphql.json`,
     {
@@ -384,9 +384,9 @@ async function handleCreateCheckout(request, env) {
       }),
     }
   );
-  
+
   const checkoutData = await shopifyResponse.json();
-  
+
   return jsonResponse({
     checkout_url: checkoutData.data?.checkoutCreate?.checkout?.webUrl || 'https://example.myshopify.com/checkout',
   });
@@ -395,25 +395,25 @@ async function handleCreateCheckout(request, env) {
 // Webhook handler for completed orders
 async function handleOrderWebhook(request, env) {
   const order = await request.json();
-  
+
   // Extract case IDs from custom attributes
   const caseIdsAttr = order.note_attributes?.find(attr => attr.name === 'case_ids');
   if (!caseIdsAttr) {
     return jsonResponse({ success: false, error: 'No case IDs' });
   }
-  
+
   const caseIds = caseIdsAttr.value.split(',').map(id => parseInt(id));
-  
+
   // If databases are configured, update them
   if (env.NEON_API_KEY) {
     for (const caseId of caseIds) {
-      await queryNeon(env, 
+      await queryNeon(env,
         'UPDATE cases SET solved_at = NOW() WHERE id = $1 AND solved_at IS NULL',
         [caseId]
       );
     }
   }
-  
+
   if (env.MONGODB_API_KEY) {
     await queryMongoDB(env, 'activities', 'insertOne', {
       type: 'case_solved',
@@ -422,7 +422,7 @@ async function handleOrderWebhook(request, env) {
       timestamp: new Date(),
     });
   }
-  
+
   return jsonResponse({ success: true, cases_solved: caseIds.length });
 }
 
