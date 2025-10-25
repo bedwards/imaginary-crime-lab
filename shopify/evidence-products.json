@@ -1,0 +1,302 @@
+[
+    {
+        "handle": "FINGERPRINT_CARD",
+        "title": "Fingerprint Analysis Card",
+        "body_html": "Complete fingerprint card with lifted prints from the crime scene. Processed and digitized for analysis.",
+        "product_type": "Evidence",
+        "vendor": "Crime Lab Forensics",
+        "tags": "evidence, forensic, case-material",
+        "variants": [
+            {
+                "price": "29.00",
+                "inventory_policy": "continue",
+                "requires_shipping": false
+            }
+        ]
+    },
+    {
+        "handle": "GUEST_MANIFEST",
+        "title": "Dinner Party Guest Manifest",
+        "body_html": "Official guest list from the Blackwood Estate dinner party. Includes arrival times and seating arrangements.",
+        "product_type": "Evidence",
+        "vendor": "Crime Lab Forensics",
+        "tags": "evidence, forensic, case-material",
+        "variants": [
+            {
+                "price": "15.00",
+                "inventory_policy": "continue",
+                "requires_shipping": false
+            }
+        ]
+    },
+    {
+        "handle": "SECURITY_LOG",
+        "title": "Estate Security Log",
+        "body_html": "24-hour security camera logs and access records from the Blackwood Estate.",
+        "product_type": "Evidence",
+        "vendor": "Crime Lab Forensics",
+        "tags": "evidence, forensic, case-material",
+        "variants": [
+            {
+                "price": "25.00",
+                "inventory_policy": "continue",
+                "requires_shipping": false
+            }
+        ]
+    },
+    {
+        "handle": "FIBER_SAMPLE",
+        "title": "Forensic Fiber Sample",
+        "body_html": "Microscopic fiber analysis from suspect's clothing. Lab-verified composition report included.",
+        "product_type": "Evidence",
+        "vendor": "Crime Lab Forensics",
+        "tags": "evidence, forensic, case-material",
+        "variants": [
+            {
+                "price": "35.00",
+                "inventory_policy": "continue",
+                "requires_shipping": false
+            }
+        ]
+    },
+    {
+        "handle": "TEMPERATURE_LOG",
+        "title": "Laboratory Temperature Log",
+        "body_html": "Automated temperature monitoring data from Dr. Chen's laboratory during the incident.",
+        "product_type": "Evidence",
+        "vendor": "Crime Lab Forensics",
+        "tags": "evidence, forensic, case-material",
+        "variants": [
+            {
+                "price": "20.00",
+                "inventory_policy": "continue",
+                "requires_shipping": false
+            }
+        ]
+    },
+    {
+        "handle": "CHEMICAL_RESIDUE",
+        "title": "Chemical Residue Analysis",
+        "body_html": "Mass spectrometry results of chemical compounds found at the scene.",
+        "product_type": "Evidence",
+        "vendor": "Crime Lab Forensics",
+        "tags": "evidence, forensic, case-material",
+        "variants": [
+            {
+                "price": "40.00",
+                "inventory_policy": "continue",
+                "requires_shipping": false
+            }
+        ]
+    },
+    {
+        "handle": "ENCRYPTED_DIARY",
+        "title": "Encrypted Personal Diary",
+        "body_html": "Dr. Chen's encrypted digital diary. Contains final entries before the incident.",
+        "product_type": "Evidence",
+        "vendor": "Crime Lab Forensics",
+        "tags": "evidence, forensic, case-material",
+        "variants": [
+            {
+                "price": "30.00",
+                "inventory_policy": "continue",
+                "requires_shipping": false
+            }
+        ]
+    },
+    {
+        "handle": "AUTOPSY_REPORT",
+        "title": "Official Autopsy Report",
+        "body_html": "Complete medical examiner's report with toxicology results and cause of death analysis.",
+        "product_type": "Evidence",
+        "vendor": "Crime Lab Forensics",
+        "tags": "evidence, forensic, case-material",
+        "variants": [
+            {
+                "price": "45.00",
+                "inventory_policy": "continue",
+                "requires_shipping": false
+            }
+        ]
+    },
+    {
+        "handle": "EXPERIMENT_LOG",
+        "title": "Final Experiment Log",
+        "body_html": "Laboratory notebook documenting Dr. Chen's last experiment procedures and observations.",
+        "product_type": "Evidence",
+        "vendor": "Crime Lab Forensics",
+        "tags": "evidence, forensic, case-material",
+        "variants": [
+            {
+                "price": "25.00",
+                "inventory_policy": "continue",
+                "requires_shipping": false
+            }
+        ]
+    },
+    {
+        "handle": "BLOOD_SPATTER",
+        "title": "Blood Spatter Pattern Analysis",
+        "body_html": "Professional blood spatter analysis with trajectory calculations and impact angles.",
+        "product_type": "Evidence",
+        "vendor": "Crime Lab Forensics",
+        "tags": "evidence, forensic, case-material",
+        "variants": [
+            {
+                "price": "50.00",
+                "inventory_policy": "continue",
+                "requires_shipping": false
+            }
+        ]
+    },
+    {
+        "handle": "CIPHER_KEY",
+        "title": "Cryptographic Cipher Key",
+        "body_html": "Decoded cipher key used in encrypted messages found on victims.",
+        "product_type": "Evidence",
+        "vendor": "Crime Lab Forensics",
+        "tags": "evidence, forensic, case-material",
+        "variants": [
+            {
+                "price": "35.00",
+                "inventory_policy": "continue",
+                "requires_shipping": false
+            }
+        ]
+    },
+    {
+        "handle": "HANDWRITING_SAMPLE",
+        "title": "Handwriting Comparison Sample",
+        "body_html": "Forensic handwriting analysis comparing suspect samples to evidence documents.",
+        "product_type": "Evidence",
+        "vendor": "Crime Lab Forensics",
+        "tags": "evidence, forensic, case-material",
+        "variants": [
+            {
+                "price": "30.00",
+                "inventory_policy": "continue",
+                "requires_shipping": false
+            }
+        ]
+    },
+    {
+        "handle": "INK_ANALYSIS",
+        "title": "Forensic Ink Analysis",
+        "body_html": "Chemical composition analysis of rare ink used in authentication marks.",
+        "product_type": "Evidence",
+        "vendor": "Crime Lab Forensics",
+        "tags": "evidence, forensic, case-material",
+        "variants": [
+            {
+                "price": "40.00",
+                "inventory_policy": "continue",
+                "requires_shipping": false
+            }
+        ]
+    },
+    {
+        "handle": "PURCHASE_RECORDS",
+        "title": "Supplier Purchase Records",
+        "body_html": "Financial records showing purchases of rare materials from specialized suppliers.",
+        "product_type": "Evidence",
+        "vendor": "Crime Lab Forensics",
+        "tags": "evidence, forensic, case-material",
+        "variants": [
+            {
+                "price": "25.00",
+                "inventory_policy": "continue",
+                "requires_shipping": false
+            }
+        ]
+    },
+    {
+        "handle": "DMV_PHOTOS",
+        "title": "DMV Photo Database Access",
+        "body_html": "Department of Motor Vehicles photographic records for suspect identification.",
+        "product_type": "Evidence",
+        "vendor": "Crime Lab Forensics",
+        "tags": "evidence, forensic, case-material",
+        "variants": [
+            {
+                "price": "20.00",
+                "inventory_policy": "continue",
+                "requires_shipping": false
+            }
+        ]
+    },
+    {
+        "handle": "PAINT_COMPOSITION",
+        "title": "Paint Composition Analysis",
+        "body_html": "Detailed analysis of paint pigments and binding agents from suspected forgeries.",
+        "product_type": "Evidence",
+        "vendor": "Crime Lab Forensics",
+        "tags": "evidence, forensic, case-material",
+        "variants": [
+            {
+                "price": "45.00",
+                "inventory_policy": "continue",
+                "requires_shipping": false
+            }
+        ]
+    },
+    {
+        "handle": "UV_FLUORESCENCE",
+        "title": "UV Fluorescence Report",
+        "body_html": "Ultraviolet light examination results revealing hidden signatures and modern materials.",
+        "product_type": "Evidence",
+        "vendor": "Crime Lab Forensics",
+        "tags": "evidence, forensic, case-material",
+        "variants": [
+            {
+                "price": "40.00",
+                "inventory_policy": "continue",
+                "requires_shipping": false
+            }
+        ]
+    },
+    {
+        "handle": "SHIPPING_MANIFEST",
+        "title": "International Shipping Manifest",
+        "body_html": "Complete shipping records with customs declarations and tracking information.",
+        "product_type": "Evidence",
+        "vendor": "Crime Lab Forensics",
+        "tags": "evidence, forensic, case-material",
+        "variants": [
+            {
+                "price": "30.00",
+                "inventory_policy": "continue",
+                "requires_shipping": false
+            }
+        ]
+    },
+    {
+        "handle": "AUTH_CERTIFICATES",
+        "title": "Authentication Certificates",
+        "body_html": "Forged authentication certificates with handwriting and paper analysis.",
+        "product_type": "Evidence",
+        "vendor": "Crime Lab Forensics",
+        "tags": "evidence, forensic, case-material",
+        "variants": [
+            {
+                "price": "35.00",
+                "inventory_policy": "continue",
+                "requires_shipping": false
+            }
+        ]
+    },
+    {
+        "handle": "SUPPLIER_LEDGER",
+        "title": "Supplier Financial Ledger",
+        "body_html": "Accounting records from art supply vendors showing suspicious bulk purchases.",
+        "product_type": "Evidence",
+        "vendor": "Crime Lab Forensics",
+        "tags": "evidence, forensic, case-material",
+        "variants": [
+            {
+                "price": "25.00",
+                "inventory_policy": "continue",
+                "requires_shipping": false
+            }
+        ]
+    }
+]

@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # Neon Postgres simulation using bedwards/pg-graph-doc
   neon-local:

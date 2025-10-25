@@ -1,12 +1,12 @@
 # Wrangler configuration for Imaginary Crime Lab Worker
 
-name = "crime-lab-api"
+name = "crime-lab"
 main = "worker.js"
 compatibility_date = "2024-10-25"
 workers_dev = true
 
 # Account ID from Cloudflare dashboard
-account_id = "your-account-id-here"
+account_id = "0fac1e4324a9b6001e559ee14093caec"
 
 # Routes (configure after deploying)
 # routes = [
@@ -17,17 +17,11 @@ account_id = "your-account-id-here"
 # DO NOT commit actual secrets to this file
 
 [env.production.vars]
-SHOPIFY_STORE_DOMAIN = "your-store.myshopify.com"
-
-# Secrets to set manually:
-# wrangler secret put NEON_DATABASE_URL
-# wrangler secret put MONGODB_URI
-# wrangler secret put SHOPIFY_STOREFRONT_TOKEN
-# wrangler secret put SHOPIFY_ADMIN_TOKEN
+SHOPIFY_STORE_DOMAIN = "crime-lab.myshopify.com"
 
 # Development environment
 [env.development.vars]
-SHOPIFY_STORE_DOMAIN = "your-dev-store.myshopify.com"
+SHOPIFY_STORE_DOMAIN = "crime-lab.myshopify.com"
 
 # Bindings (if using KV, Durable Objects, etc.)
 # [[kv_namespaces]]
@@ -73,45 +67,3 @@ crons = []  # No scheduled tasks
 #
 # Test locally:
 #   wrangler dev
-#
-# ============================================================================
-# Environment Setup Checklist
-# ============================================================================
-#
-# 1. Create Neon project and database
-#    - Copy connection string (postgresql://...)
-#    - Run neon-schema.sql to create tables
-#
-# 2. Create MongoDB Atlas cluster
-#    - Whitelist Cloudflare IPs (or 0.0.0.0/0)
-#    - Create user with readWrite role
-#    - Copy connection string (mongodb+srv://...)
-#
-# 3. Create Shopify app
-#    - Enable Storefront API
-#    - Generate Storefront Access Token
-#    - Generate Admin API Access Token
-#    - Note store domain (yourstore.myshopify.com)
-#
-# 4. Set Worker secrets
-#    wrangler secret put NEON_DATABASE_URL
-#    > postgresql://user:pass@host/database
-#    
-#    wrangler secret put MONGODB_URI
-#    > mongodb+srv://user:pass@cluster.mongodb.net/crimelab
-#    
-#    wrangler secret put SHOPIFY_STOREFRONT_TOKEN
-#    > your-storefront-token
-#    
-#    wrangler secret put SHOPIFY_ADMIN_TOKEN
-#    > your-admin-token
-#
-# 5. Deploy Worker
-#    wrangler deploy --env production
-#
-# 6. Configure Shopify webhook
-#    URL: https://crime-lab-api.your-worker.workers.dev/webhook/order
-#    Event: Order creation
-#    Format: JSON
-#
-# ============================================================================

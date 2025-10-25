@@ -1,5 +1,8 @@
 /attic/
 
+shopify/product-ids.json
+shopify/update-neon.sql
+
 # Environment variables
 .env
 .env.local
