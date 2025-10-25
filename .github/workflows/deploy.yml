@@ -28,19 +28,6 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           wrangler deploy --env production
-          
-      - name: Set Worker Secrets
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          NEON_DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
-          MONGODB_URI: ${{ secrets.MONGODB_URI }}
-          SHOPIFY_STOREFRONT_TOKEN: ${{ secrets.SHOPIFY_STOREFRONT_TOKEN }}
-          SHOPIFY_ADMIN_TOKEN: ${{ secrets.SHOPIFY_ADMIN_TOKEN }}
-        run: |
-          echo "$NEON_DATABASE_URL" | wrangler secret put NEON_DATABASE_URL --env production
-          echo "$MONGODB_URI" | wrangler secret put MONGODB_URI --env production
-          echo "$SHOPIFY_STOREFRONT_TOKEN" | wrangler secret put SHOPIFY_STOREFRONT_TOKEN --env production
-          echo "$SHOPIFY_ADMIN_TOKEN" | wrangler secret put SHOPIFY_ADMIN_TOKEN --env production
 
   deploy-frontend:
     name: Deploy Frontend to GitHub Pages
