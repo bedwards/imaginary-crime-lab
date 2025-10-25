@@ -1,69 +1,37 @@
 # Wrangler configuration for Imaginary Crime Lab Worker
 
-name = "crime-lab"
+name = "crime-lab-api"
 main = "worker.js"
 compatibility_date = "2024-10-25"
-workers_dev = true
+compatibility_flags = ["nodejs_compat"]
 
 # Account ID from Cloudflare dashboard
 account_id = "0fac1e4324a9b6001e559ee14093caec"
 
-# Routes (configure after deploying)
-# routes = [
-#   { pattern = "crime-lab-api.your-domain.com/*", zone_name = "your-domain.com" }
-# ]
-
 # Environment variables (set via wrangler secret put)
 # DO NOT commit actual secrets to this file
+
+[env.production]
+name = "crime-lab-api"
 
 [env.production.vars]
 SHOPIFY_STORE_DOMAIN = "crime-lab.myshopify.com"
 
 # Development environment
+[env.development]
+name = "crime-lab-api-dev"
+
 [env.development.vars]
 SHOPIFY_STORE_DOMAIN = "crime-lab.myshopify.com"
-
-# Bindings (if using KV, Durable Objects, etc.)
-# [[kv_namespaces]]
-# binding = "CACHE"
-# id = "your-kv-namespace-id"
 
 # Node.js compatibility for @neondatabase/serverless and mongodb
 node_compat = true
 
-# Enable observability
-observability = true
-
-# Limits
-[limits]
-cpu_ms = 50  # Max CPU time per request (free tier: 10ms, paid: 50ms)
+# Observability
+[observability]
+enabled = true
 
 # Build configuration
 [build]
-command = ""  # No build step needed for vanilla JS
-
-# Triggers for automatic deployment
-[triggers]
-crons = []  # No scheduled tasks
-
-# ============================================================================
-# Deployment Commands
-# ============================================================================
-#
-# Deploy to production:
-#   wrangler deploy --env production
-#
-# Deploy to development:
-#   wrangler deploy --env development
-#
-# Tail logs:
-#   wrangler tail --env production
-#
-# Set secrets:
-#   wrangler secret put NEON_DATABASE_URL --env production
-#   wrangler secret put MONGODB_URI --env production
-#   wrangler secret put SHOPIFY_STOREFRONT_TOKEN --env production
-#   wrangler secret put SHOPIFY_ADMIN_TOKEN --env production
-#
-# Test locally:
-#   wrangler dev
+command = ""
+watch_paths = ["worker.js"]
