@@ -59,8 +59,16 @@ export default {
 
 async function queryNeon(env, query, params = []) {
   const sql = neon(env.NEON_DATABASE_URL);
-  const result = await sql(query, params);
-  return result;
+  
+  if (params.length > 0) {
+    // Parameterized query
+    const result = await sql.query(query, params);
+    return result.rows;
+  }
+  
+  // Simple query without params - just pass the raw SQL string
+  const result = await sql.query(query);
+  return result.rows;
 }
 
 // Use MongoDB Data API instead of the Node.js driver
@@ -68,7 +76,7 @@ async function queryMongoDB(env, collection, operation, document = {}) {
   const url = new URL(env.MONGODB_URI);
   const database = url.pathname.slice(1) || 'crimelab';
 
-  const response = await fetch(`${env.MONGODB_DATA_API}/action/${operation}`, {
+  const response = await fetch(`${ env.MONGODB_DATA_API } /action/${ operation } `, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -83,7 +91,7 @@ async function queryMongoDB(env, collection, operation, document = {}) {
   });
 
   if (!response.ok) {
-    throw new Error(`MongoDB operation failed: ${response.statusText}`);
+    throw new Error(`MongoDB operation failed: ${ response.statusText } `);
   }
 
   return response.json();
@@ -116,19 +124,19 @@ async function handleGetCases(env) {
   }
 
   const result = await queryNeon(env, `
-    SELECT 
-      c.id,
-      c.case_number as number,
-      c.title,
-      c.description,
-      c.solution,
-      c.solved_at,
-      array_agg(ce.evidence_id) as required_evidence
+  SELECT
+  c.id,
+    c.case_number as number,
+    c.title,
+    c.description,
+    c.solution,
+    c.solved_at,
+    array_agg(ce.evidence_id) as required_evidence
     FROM cases c
     LEFT JOIN case_evidence ce ON c.id = ce.case_id
     GROUP BY c.id
     ORDER BY c.case_number
-  `);
+    `);
 
   return jsonResponse(result);
 }
@@ -160,39 +168,39 @@ async function handleGetEvidence(env) {
   // Fetch from Shopify
   const query = `
     query {
-      products(first: 50) {
+    products(first: 50) {
         edges {
           node {
-            id
-            title
-            description
+          id
+          title
+          description
             priceRange {
               minVariantPrice {
-                amount
-              }
+              amount
             }
-            variants(first: 1) {
+          }
+          variants(first: 1) {
               edges {
                 node {
-                  id
-                }
+                id
               }
             }
           }
         }
       }
     }
+  }
   `;
 
   const shopifyResponse = await fetch(
     `https://${env.SHOPIFY_STORE_DOMAIN}/api/2024-10/graphql.json`,
-    {
-      method: 'POST',
+  {
+    method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
+      'Content-Type': 'application/json',
         'X-Shopify-Storefront-Access-Token': env.SHOPIFY_STOREFRONT_TOKEN,
       },
-      body: JSON.stringify({ query }),
+    body: JSON.stringify({ query }),
     }
   );
 
