@@ -107,8 +107,8 @@ jobs:
         run: |
           if [ "${{ needs.deploy-worker.result }}" == "success" ] && [ "${{ needs.deploy-frontend.result }}" == "success" ]; then
             echo "✅ Deployment successful!"
-            echo "Worker: https://crime-lab-api.your-worker.workers.dev"
-            echo "Frontend: https://yourusername.github.io/imaginary-crime-lab"
+            echo "Worker: https://crime-lab.brian-mabry-edwards.workers.dev"
+            echo "Frontend: https://bedwards.github.io/imaginary-crime-lab"
           else
             echo "❌ Deployment failed. Check logs above."
             exit 1

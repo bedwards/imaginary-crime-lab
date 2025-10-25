@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { AlertCircle, CheckCircle, Lock, Unlock, Database, Zap, ShoppingCart, FileText } from 'lucide-react';
 
-const API_BASE = 'https://crime-lab-api.your-worker.workers.dev';
+const API_BASE = 'https://crime-lab.brian-mabry-edwards.workers.dev';
 
 export default function CrimeLab() {
   const [cases, setCases] = useState([]);
@@ -26,7 +26,7 @@ export default function CrimeLab() {
         fetch(`${API_BASE}/evidence`),
         fetch(`${API_BASE}/metrics`)
       ]);
-      
+
       setCases(await casesRes.json());
       setEvidence(await evidenceRes.json());
       setDbMetrics(await metricsRes.json());
@@ -39,35 +39,35 @@ export default function CrimeLab() {
 
   const subscribeToLiveActivity = () => {
     const eventSource = new EventSource(`${API_BASE}/activity/stream`);
-    
+
     eventSource.onmessage = (event) => {
       const activity = JSON.parse(event.data);
       setActivities(prev => [activity, ...prev].slice(0, 50));
-      
+
       // Update live connection count
       if (activity.type === 'connection_count') {
         setLiveConnections(activity.count);
       }
-      
+
       // If case solved, refresh cases
       if (activity.type === 'case_solved') {
         fetchInitialData();
       }
     };
-    
+
     eventSource.onerror = () => {
       console.log('Activity stream disconnected, reconnecting...');
     };
-    
+
     return () => eventSource.close();
   };
 
   const addToCart = async (evidenceId) => {
     const item = evidence.find(e => e.id === evidenceId);
     if (!item) return;
-    
+
     setCart(prev => [...prev, item]);
-    
+
     // Track activity in MongoDB
     await fetch(`${API_BASE}/activity`, {
       method: 'POST',
@@ -83,15 +83,15 @@ export default function CrimeLab() {
   const purchaseCart = async () => {
     // Check which cases can be solved
     const evidenceIds = cart.map(e => e.id);
-    const solvableCases = cases.filter(c => 
+    const solvableCases = cases.filter(c =>
       c.required_evidence.every(reqId => evidenceIds.includes(reqId))
     );
-    
+
     if (solvableCases.length === 0) {
       alert('This evidence doesn\'t complete any cases yet');
       return;
     }
-    
+
     // Create Shopify checkout through Worker
     const response = await fetch(`${API_BASE}/checkout`, {
       method: 'POST',
@@ -101,20 +101,20 @@ export default function CrimeLab() {
         case_ids: solvableCases.map(c => c.id)
       })
     });
-    
+
     const { checkout_url } = await response.json();
     window.location.href = checkout_url;
   };
 
   const CaseCard = ({ caseData }) => {
-    const requiredEvidence = evidence.filter(e => 
+    const requiredEvidence = evidence.filter(e =>
       caseData.required_evidence.includes(e.id)
     );
     const owned = cart.map(c => c.id);
     const progress = requiredEvidence.filter(e => owned.includes(e.id)).length;
     const total = requiredEvidence.length;
     const solved = progress === total;
-    
+
     return (
       <div className={`border-2 rounded-lg p-6 ${solved ? 'border-green-500 bg-green-50' : 'border-gray-300'}`}>
         <div className="flex items-start justify-between mb-4">
@@ -130,21 +130,20 @@ export default function CrimeLab() {
             <div className="text-2xl font-bold">{progress}/{total}</div>
           </div>
         </div>
-        
+
         <p className="text-gray-700 mb-4">{caseData.description}</p>
-        
+
         <div className="space-y-2">
           <div className="text-sm font-semibold text-gray-700">Required Evidence:</div>
           {requiredEvidence.map(ev => (
-            <div key={ev.id} className={`flex items-center justify-between p-2 rounded ${
-              owned.includes(ev.id) ? 'bg-green-100' : 'bg-gray-100'
-            }`}>
+            <div key={ev.id} className={`flex items-center justify-between p-2 rounded ${owned.includes(ev.id) ? 'bg-green-100' : 'bg-gray-100'
+              }`}>
               <span>{ev.name}</span>
               <span className="font-mono text-sm">${ev.price}</span>
             </div>
           ))}
         </div>
-        
+
         {solved && (
           <div className="mt-4 p-4 bg-green-100 border border-green-300 rounded">
             <div className="font-bold text-green-800 mb-2">🎉 CASE SOLVED</div>
@@ -177,7 +176,7 @@ export default function CrimeLab() {
           </div>
         </div>
       </div>
-      
+
       <div className="bg-purple-50 border-2 border-purple-200 rounded-lg p-6">
         <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
           <Zap className="text-purple-600" />
@@ -199,7 +198,7 @@ export default function CrimeLab() {
           ))}
         </div>
       </div>
-      
+
       <div className="bg-yellow-50 border-2 border-yellow-200 rounded-lg p-6">
         <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
           <FileText className="text-yellow-600" />
@@ -243,31 +242,28 @@ export default function CrimeLab() {
           </div>
         </div>
       </div>
-      
+
       {/* Navigation */}
       <div className="bg-white border-b">
         <div className="max-w-7xl mx-auto px-6 py-4 flex gap-4">
           <button
             onClick={() => setActiveView('cases')}
-            className={`px-4 py-2 rounded font-semibold ${
-              activeView === 'cases' ? 'bg-blue-600 text-white' : 'bg-gray-100'
-            }`}
+            className={`px-4 py-2 rounded font-semibold ${activeView === 'cases' ? 'bg-blue-600 text-white' : 'bg-gray-100'
+              }`}
           >
             Active Cases
           </button>
           <button
             onClick={() => setActiveView('evidence')}
-            className={`px-4 py-2 rounded font-semibold ${
-              activeView === 'evidence' ? 'bg-blue-600 text-white' : 'bg-gray-100'
-            }`}
+            className={`px-4 py-2 rounded font-semibold ${activeView === 'evidence' ? 'bg-blue-600 text-white' : 'bg-gray-100'
+              }`}
           >
             Evidence Store
           </button>
           <button
             onClick={() => setActiveView('internals')}
-            className={`px-4 py-2 rounded font-semibold ${
-              activeView === 'internals' ? 'bg-blue-600 text-white' : 'bg-gray-100'
-            }`}
+            className={`px-4 py-2 rounded font-semibold ${activeView === 'internals' ? 'bg-blue-600 text-white' : 'bg-gray-100'
+              }`}
           >
             System Internals
           </button>
@@ -278,7 +274,7 @@ export default function CrimeLab() {
           </button>
         </div>
       </div>
-      
+
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-6 py-8">
         {activeView === 'cases' && (
@@ -288,7 +284,7 @@ export default function CrimeLab() {
             ))}
           </div>
         )}
-        
+
         {activeView === 'evidence' && (
           <div className="grid grid-cols-3 gap-6">
             {evidence.map(item => (
@@ -308,10 +304,10 @@ export default function CrimeLab() {
             ))}
           </div>
         )}
-        
+
         {activeView === 'internals' && <InternalView />}
       </div>
-      
+
       {/* Cart Sidebar */}
       {cart.length > 0 && (
         <div className="fixed bottom-8 right-8 bg-white border-2 border-gray-300 rounded-lg shadow-2xl p-6 w-96">
