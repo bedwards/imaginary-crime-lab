@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import CrimeLab from './crime-lab-frontend.jsx';
+import App from './App.jsx'
 import './index.css';
 
 // Hide loading spinner
@@ -12,6 +12,6 @@ if (loadingElement) {
 // Mount React app
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <CrimeLab />
+    <App />
   </React.StrictMode>
 );
