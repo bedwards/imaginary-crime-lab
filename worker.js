@@ -1,5 +1,6 @@
 // Cloudflare Worker - API Gateway for Imaginary Crime Lab
-// Updated for Cloudflare Workers compatibility
+
+import { neon } from '@neondatabase/serverless';
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -56,27 +57,10 @@ export default {
   },
 };
 
-// Use Neon's HTTP API instead of the serverless client
 async function queryNeon(env, query, params = []) {
-  const response = await fetch('https://api.neon.tech/sql', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${env.NEON_API_KEY}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      query,
-      params,
-      database_url: env.NEON_DATABASE_URL,
-    }),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Neon query failed: ${response.statusText}`);
-  }
-
-  const result = await response.json();
-  return result.rows || [];
+  const sql = neon(env.NEON_DATABASE_URL);
+  const result = await sql(query, params);
+  return result;
 }
 
 // Use MongoDB Data API instead of the Node.js driver
