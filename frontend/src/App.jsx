@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { AlertCircle, CheckCircle, Lock, Unlock, Database, Zap, ShoppingCart, FileText } from 'lucide-react';
 
-const API_BASE = 'https://crime-lab.brian-mabry-edwards.workers.dev';
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8787';
 
 export default function CrimeLab() {
   const [cases, setCases] = useState([]);

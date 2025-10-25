@@ -34,4 +34,3 @@ enabled = true
 # Build configuration
 [build]
 command = ""
-watch_paths = ["worker.js"]

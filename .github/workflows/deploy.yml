@@ -51,7 +51,7 @@ jobs:
       - name: Build frontend
         working-directory: ./frontend
         env:
-          VITE_API_BASE: https://crime-lab-api.your-worker.workers.dev
+          VITE_API_BASE: https://crime-lab-api.0fac1e4324a9b6001e559ee14093caec.workers.dev
         run: npm run build
 
       - name: Deploy to GitHub Pages
@@ -59,7 +59,6 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./frontend/dist
-          cname: your-custom-domain.com  # Optional: remove if not using custom domain
 
   test:
     name: Run Tests
