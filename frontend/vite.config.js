@@ -4,7 +4,7 @@ import { defineConfig } from 'vite'
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
-  base: './', // Relative paths for GitHub Pages
+  base: '/imaginary-crime-lab/',
   build: {
     outDir: 'dist',
     sourcemap: true,
