@@ -87,7 +87,7 @@ async function queryMongoDB(env, collection, operation, document = {}) {
   const response = await fetch(`${env.MONGODB_DATA_API}/action/${operation}`, {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/ejson',
+      'Content-Type': 'application/json',
       'api-key': env.MONGODB_API_KEY,
     },
     body: JSON.stringify({
