@@ -1,0 +1,120 @@
+# Wrangler configuration for Imaginary Crime Lab Worker
+
+name = "crime-lab-api"
+main = "worker.js"
+compatibility_date = "2024-10-25"
+workers_dev = true
+
+# Account ID from Cloudflare dashboard
+account_id = "your-account-id-here"
+
+# Routes (configure after deploying)
+# routes = [
+#   { pattern = "crime-lab-api.your-domain.com/*", zone_name = "your-domain.com" }
+# ]
+
+# Environment variables (set via wrangler secret put)
+# DO NOT commit actual secrets to this file
+[env.production]
+vars = {
+  SHOPIFY_STORE_DOMAIN = "your-store.myshopify.com"
+}
+
+# Secrets to set manually:
+# wrangler secret put NEON_DATABASE_URL
+# wrangler secret put MONGODB_URI
+# wrangler secret put SHOPIFY_STOREFRONT_TOKEN
+# wrangler secret put SHOPIFY_ADMIN_TOKEN
+
+# Development environment
+[env.development]
+vars = {
+  SHOPIFY_STORE_DOMAIN = "your-dev-store.myshopify.com"
+}
+
+# Bindings (if using KV, Durable Objects, etc.)
+# [[kv_namespaces]]
+# binding = "CACHE"
+# id = "your-kv-namespace-id"
+
+# Node.js compatibility for @neondatabase/serverless and mongodb
+node_compat = true
+
+# Enable observability
+observability = true
+
+# Limits
+[limits]
+cpu_ms = 50  # Max CPU time per request (free tier: 10ms, paid: 50ms)
+
+# Build configuration
+[build]
+command = ""  # No build step needed for vanilla JS
+
+# Triggers for automatic deployment
+[triggers]
+crons = []  # No scheduled tasks
+
+# ============================================================================
+# Deployment Commands
+# ============================================================================
+#
+# Deploy to production:
+#   wrangler deploy --env production
+#
+# Deploy to development:
+#   wrangler deploy --env development
+#
+# Tail logs:
+#   wrangler tail --env production
+#
+# Set secrets:
+#   wrangler secret put NEON_DATABASE_URL --env production
+#   wrangler secret put MONGODB_URI --env production
+#   wrangler secret put SHOPIFY_STOREFRONT_TOKEN --env production
+#   wrangler secret put SHOPIFY_ADMIN_TOKEN --env production
+#
+# Test locally:
+#   wrangler dev
+#
+# ============================================================================
+# Environment Setup Checklist
+# ============================================================================
+#
+# 1. Create Neon project and database
+#    - Copy connection string (postgresql://...)
+#    - Run neon-schema.sql to create tables
+#
+# 2. Create MongoDB Atlas cluster
+#    - Whitelist Cloudflare IPs (or 0.0.0.0/0)
+#    - Create user with readWrite role
+#    - Copy connection string (mongodb+srv://...)
+#
+# 3. Create Shopify app
+#    - Enable Storefront API
+#    - Generate Storefront Access Token
+#    - Generate Admin API Access Token
+#    - Note store domain (yourstore.myshopify.com)
+#
+# 4. Set Worker secrets
+#    wrangler secret put NEON_DATABASE_URL
+#    > postgresql://user:pass@host/database
+#    
+#    wrangler secret put MONGODB_URI
+#    > mongodb+srv://user:pass@cluster.mongodb.net/crimelab
+#    
+#    wrangler secret put SHOPIFY_STOREFRONT_TOKEN
+#    > your-storefront-token
+#    
+#    wrangler secret put SHOPIFY_ADMIN_TOKEN
+#    > your-admin-token
+#
+# 5. Deploy Worker
+#    wrangler deploy --env production
+#
+# 6. Configure Shopify webhook
+#    URL: https://crime-lab-api.your-worker.workers.dev/webhook/order
+#    Event: Order creation
+#    Format: JSON
+#
+# ============================================================================

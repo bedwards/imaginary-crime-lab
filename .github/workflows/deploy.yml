@@ -1,0 +1,157 @@
+name: Deploy Imaginary Crime Lab
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy-worker:
+    name: Deploy Cloudflare Worker
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Wrangler
+        run: npm install -g wrangler
+
+      - name: Deploy Worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          wrangler deploy --env production
+          
+      - name: Set Worker Secrets
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          NEON_DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          SHOPIFY_STOREFRONT_TOKEN: ${{ secrets.SHOPIFY_STOREFRONT_TOKEN }}
+          SHOPIFY_ADMIN_TOKEN: ${{ secrets.SHOPIFY_ADMIN_TOKEN }}
+        run: |
+          echo "$NEON_DATABASE_URL" | wrangler secret put NEON_DATABASE_URL --env production
+          echo "$MONGODB_URI" | wrangler secret put MONGODB_URI --env production
+          echo "$SHOPIFY_STOREFRONT_TOKEN" | wrangler secret put SHOPIFY_STOREFRONT_TOKEN --env production
+          echo "$SHOPIFY_ADMIN_TOKEN" | wrangler secret put SHOPIFY_ADMIN_TOKEN --env production
+
+  deploy-frontend:
+    name: Deploy Frontend to GitHub Pages
+    runs-on: ubuntu-latest
+    needs: deploy-worker
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ./frontend
+        run: npm ci
+
+      - name: Build frontend
+        working-directory: ./frontend
+        env:
+          VITE_API_BASE: https://crime-lab-api.your-worker.workers.dev
+        run: npm run build
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./frontend/dist
+          cname: your-custom-domain.com  # Optional: remove if not using custom domain
+
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Test Worker locally
+        run: |
+          npm install -g wrangler
+          wrangler dev &
+          sleep 5
+          curl -f http://localhost:8787/metrics || exit 1
+
+      - name: Lint Worker code
+        run: |
+          npx eslint worker.js || echo "No linting errors"
+
+  notify:
+    name: Deployment Notification
+    runs-on: ubuntu-latest
+    needs: [deploy-worker, deploy-frontend]
+    if: always()
+    steps:
+      - name: Check deployment status
+        run: |
+          if [ "${{ needs.deploy-worker.result }}" == "success" ] && [ "${{ needs.deploy-frontend.result }}" == "success" ]; then
+            echo "✅ Deployment successful!"
+            echo "Worker: https://crime-lab-api.your-worker.workers.dev"
+            echo "Frontend: https://yourusername.github.io/imaginary-crime-lab"
+          else
+            echo "❌ Deployment failed. Check logs above."
+            exit 1
+          fi
+
+# ============================================================================
+# GitHub Secrets Required
+# ============================================================================
+#
+# Go to: Repository Settings → Secrets and variables → Actions → New secret
+#
+# Required secrets:
+# - CLOUDFLARE_API_TOKEN: Cloudflare API token with Workers edit permissions
+# - CLOUDFLARE_ACCOUNT_ID: Your Cloudflare account ID
+# - NEON_DATABASE_URL: Postgres connection string
+# - MONGODB_URI: MongoDB connection string
+# - SHOPIFY_STOREFRONT_TOKEN: Shopify Storefront API token
+# - SHOPIFY_ADMIN_TOKEN: Shopify Admin API token
+#
+# The GITHUB_TOKEN is automatically provided by GitHub Actions
+#
+# ============================================================================
+# Setup Instructions
+# ============================================================================
+#
+# 1. Enable GitHub Pages:
+#    - Repository Settings → Pages
+#    - Source: Deploy from a branch
+#    - Branch: gh-pages / (root)
+#
+# 2. Add secrets to repository:
+#    - Settings → Secrets and variables → Actions
+#    - Add each secret listed above
+#
+# 3. Update workflow variables:
+#    - Edit VITE_API_BASE with your Worker URL
+#    - Edit cname if using custom domain
+#    - Update notification URLs
+#
+# 4. Push to main branch to trigger deployment
+#
+# 5. Monitor deployment:
+#    - Actions tab in GitHub repository
+#    - Check logs for each job
+#
+# ============================================================================

@@ -1,0 +1,185 @@
+version: '3.8'
+
+services:
+  # Neon Postgres simulation using bedwards/pg-graph-doc
+  neon-local:
+    image: bedwards/pg-graph-doc:16
+    container_name: crimelab-neon
+    environment:
+      POSTGRES_DB: crimelab
+      POSTGRES_USER: crimelab
+      POSTGRES_PASSWORD: local_dev_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - neon-data:/var/lib/postgresql/data
+      - ./neon-schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U crimelab"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - crimelab-network
+
+  # MongoDB for live activity (local simulation of Atlas)
+  mongodb:
+    image: mongodb/mongodb-community-server:7.0-ubuntu2204
+    container_name: crimelab-mongo
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: crimelab
+      MONGO_INITDB_ROOT_PASSWORD: local_dev_password
+      MONGO_INITDB_DATABASE: crimelab
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+      - ./mongodb-init.js:/docker-entrypoint-initdb.d/init.js:ro
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/crimelab --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - crimelab-network
+
+  # Cloudflare Worker simulation (Miniflare)
+  worker-local:
+    image: node:20-alpine
+    container_name: crimelab-worker
+    working_dir: /app
+    command: sh -c "npm install -g wrangler miniflare && miniflare worker.js --port 8787"
+    ports:
+      - "8787:8787"
+    volumes:
+      - ./worker.js:/app/worker.js:ro
+      - ./wrangler.toml:/app/wrangler.toml:ro
+    environment:
+      NEON_DATABASE_URL: "postgresql://crimelab:local_dev_password@neon-local:5432/crimelab"
+      MONGODB_URI: "mongodb://crimelab:local_dev_password@mongodb:27017/crimelab?authSource=admin"
+      SHOPIFY_STOREFRONT_TOKEN: "your-dev-token-here"
+      SHOPIFY_ADMIN_TOKEN: "your-dev-token-here"
+      SHOPIFY_STORE_DOMAIN: "your-store.myshopify.com"
+    depends_on:
+      neon-local:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+    networks:
+      - crimelab-network
+
+  # React frontend dev server
+  frontend:
+    image: node:20-alpine
+    container_name: crimelab-frontend
+    working_dir: /app
+    command: sh -c "npm install && npm run dev"
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app:cached
+    environment:
+      VITE_API_BASE: "http://localhost:8787"
+    networks:
+      - crimelab-network
+
+  # pgAdmin for database inspection
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: crimelab-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@crimelab.local
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+    networks:
+      - crimelab-network
+
+  # MongoDB Express for MongoDB inspection
+  mongo-express:
+    image: mongo-express:latest
+    container_name: crimelab-mongo-express
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: crimelab
+      ME_CONFIG_MONGODB_ADMINPASSWORD: local_dev_password
+      ME_CONFIG_MONGODB_URL: mongodb://crimelab:local_dev_password@mongodb:27017/
+      ME_CONFIG_BASICAUTH: false
+    ports:
+      - "8081:8081"
+    depends_on:
+      - mongodb
+    networks:
+      - crimelab-network
+
+volumes:
+  neon-data:
+    driver: local
+  mongo-data:
+    driver: local
+  pgadmin-data:
+    driver: local
+
+networks:
+  crimelab-network:
+    driver: bridge
+
+# ============================================================================
+# Usage Instructions
+# ============================================================================
+#
+# 1. Start all services:
+#    docker-compose up -d
+#
+# 2. Check service health:
+#    docker-compose ps
+#
+# 3. View logs:
+#    docker-compose logs -f
+#    docker-compose logs -f worker-local
+#
+# 4. Access services:
+#    - Frontend: http://localhost:5173
+#    - Worker API: http://localhost:8787
+#    - pgAdmin: http://localhost:5050
+#    - MongoDB Express: http://localhost:8081
+#    - Postgres direct: postgresql://crimelab:local_dev_password@localhost:5432/crimelab
+#    - MongoDB direct: mongodb://crimelab:local_dev_password@localhost:27017/crimelab
+#
+# 5. Seed Shopify product IDs:
+#    After creating products in Shopify, update neon-schema.sql evidence_ids
+#    Then rebuild: docker-compose down && docker-compose up -d --force-recreate neon-local
+#
+# 6. Test webhook locally:
+#    curl -X POST http://localhost:8787/webhook/order \
+#      -H "Content-Type: application/json" \
+#      -d '{"id": "test-order-123", "note_attributes": [{"name": "case_ids", "value": "1,2"}]}'
+#
+# 7. Monitor live activity:
+#    curl -N http://localhost:8787/activity/stream
+#
+# 8. Stop all services:
+#    docker-compose down
+#
+# 9. Reset all data:
+#    docker-compose down -v
+#
+# ============================================================================
+# Development Workflow
+# ============================================================================
+#
+# Frontend changes:
+# - Edit files in ./frontend
+# - Hot reload automatically applies
+#
+# Worker changes:
+# - Edit worker.js
+# - Restart: docker-compose restart worker-local
+#
+# Schema changes:
+# - Edit neon-schema.sql or mongodb-schema.js
+# - Recreate: docker-compose down && docker-compose up -d --force-recreate
+#
+# ============================================================================

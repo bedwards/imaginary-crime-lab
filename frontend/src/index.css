@@ -1,0 +1,211 @@
+/* Tailwind CSS base styles */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom global styles */
+@layer base {
+  body {
+    @apply antialiased;
+  }
+  
+  * {
+    @apply border-border;
+  }
+}
+
+/* Custom utility classes */
+@layer utilities {
+  /* Scrollbar styling */
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-track {
+    @apply bg-gray-100 rounded-full;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    @apply bg-gray-300 rounded-full;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    @apply bg-gray-400;
+  }
+  
+  /* Animated gradient background */
+  .bg-gradient-animated {
+    background: linear-gradient(
+      -45deg,
+      #ee7752,
+      #e73c7e,
+      #23a6d5,
+      #23d5ab
+    );
+    background-size: 400% 400%;
+    animation: gradient 15s ease infinite;
+  }
+  
+  @keyframes gradient {
+    0% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+    100% {
+      background-position: 0% 50%;
+    }
+  }
+  
+  /* Pulse animation for live indicators */
+  .pulse-slow {
+    animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+  
+  /* Monospace number styling */
+  .font-mono-numbers {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* Component-specific styles */
+@layer components {
+  /* Case card styling */
+  .case-card {
+    @apply border-2 rounded-lg p-6 bg-white shadow-sm transition-all duration-200;
+  }
+  
+  .case-card:hover {
+    @apply shadow-md;
+  }
+  
+  .case-card.solved {
+    @apply border-green-500 bg-green-50;
+    animation: case-solve 0.6s ease-out;
+  }
+  
+  /* Evidence card styling */
+  .evidence-card {
+    @apply border rounded-lg p-4 bg-white shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer;
+  }
+  
+  .evidence-card.in-cart {
+    @apply border-blue-500 bg-blue-50;
+  }
+  
+  /* Button variants */
+  .btn {
+    @apply px-4 py-2 rounded font-semibold transition-colors duration-200;
+  }
+  
+  .btn-primary {
+    @apply btn bg-blue-600 text-white hover:bg-blue-700;
+  }
+  
+  .btn-success {
+    @apply btn bg-green-600 text-white hover:bg-green-700;
+  }
+  
+  .btn-danger {
+    @apply btn bg-red-600 text-white hover:bg-red-700;
+  }
+  
+  .btn-secondary {
+    @apply btn bg-gray-100 text-gray-900 hover:bg-gray-200;
+  }
+  
+  /* Activity feed item */
+  .activity-item {
+    @apply bg-white p-3 rounded border text-sm font-mono;
+    animation: slideIn 0.3s ease-out;
+  }
+  
+  @keyframes slideIn {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  /* Metric card */
+  .metric-card {
+    @apply bg-white rounded-lg p-4 border-2 shadow-sm;
+  }
+  
+  /* Progress bar */
+  .progress-bar {
+    @apply h-2 bg-gray-200 rounded-full overflow-hidden;
+  }
+  
+  .progress-bar-fill {
+    @apply h-full bg-blue-600 transition-all duration-500 ease-out;
+  }
+  
+  .progress-bar-fill.complete {
+    @apply bg-green-600;
+  }
+  
+  /* Badge styles */
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+  
+  .badge-success {
+    @apply badge bg-green-100 text-green-800;
+  }
+  
+  .badge-warning {
+    @apply badge bg-yellow-100 text-yellow-800;
+  }
+  
+  .badge-info {
+    @apply badge bg-blue-100 text-blue-800;
+  }
+  
+  .badge-danger {
+    @apply badge bg-red-100 text-red-800;
+  }
+}
+
+/* Animations */
+@keyframes case-solve {
+  0% {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.02);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Print styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  
+  body {
+    @apply bg-white;
+  }
+}
+
+/* Dark mode support (future enhancement) */
+@media (prefers-color-scheme: dark) {
+  /* Uncomment when implementing dark mode */
+  /*
+  :root {
+    --bg-primary: #111827;
+    --text-primary: #f9fafb;
+  }
+  */
+}

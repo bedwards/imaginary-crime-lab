@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    
+    <title>🔬 Imaginary Crime Lab - Cases Solve Themselves</title>
+    
+    <meta name="description" content="A distributed e-commerce experiment where cases solve themselves when you buy all the evidence. Portfolio project showcasing transparent architecture." />
+    <meta name="keywords" content="react, ecommerce, shopify, cloudflare workers, neon postgres, mongodb, distributed systems" />
+    <meta name="author" content="Your Name" />
+    
+    <!-- Open Graph / Social Media -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Imaginary Crime Lab - Transparent E-commerce Architecture" />
+    <meta property="og:description" content="Cases solve themselves when you buy all the evidence. See the architecture in action." />
+    <meta property="og:url" content="https://yourusername.github.io/imaginary-crime-lab" />
+    
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Imaginary Crime Lab" />
+    <meta name="twitter:description" content="Portfolio project: distributed architecture with zero black boxes" />
+    
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔬</text></svg>" />
+    
+    <!-- Preconnect to API -->
+    <link rel="preconnect" href="https://crime-lab-api.your-worker.workers.dev" />
+    <link rel="dns-prefetch" href="https://crime-lab-api.your-worker.workers.dev" />
+    
+    <!-- Base styles before React loads -->
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+        background: #f9fafb;
+        color: #111827;
+      }
+      
+      /* Loading state */
+      #loading {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        flex-direction: column;
+        gap: 1rem;
+      }
+      
+      #loading h1 {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #374151;
+      }
+      
+      #loading .spinner {
+        width: 48px;
+        height: 48px;
+        border: 4px solid #e5e7eb;
+        border-top-color: #3b82f6;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+      
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+      
+      /* Hide loading once React takes over */
+      #loading.hidden {
+        display: none;
+      }
+      
+      /* Ensure root takes full height */
+      #root {
+        min-height: 100vh;
+      }
+    </style>
+  </head>
+  
+  <body>
+    <!-- Loading state (shown until React hydrates) -->
+    <div id="loading">
+      <h1>🔬 Loading Crime Lab...</h1>
+      <div class="spinner"></div>
+      <p style="color: #6b7280; font-family: monospace; font-size: 0.875rem;">
+        React → Worker → Neon + MongoDB + Shopify
+      </p>
+    </div>
+    
+    <!-- React will render into this -->
+    <div id="root"></div>
+    
+    <!-- No-JS fallback -->
+    <noscript>
+      <div style="padding: 2rem; text-align: center;">
+        <h1>🔬 Imaginary Crime Lab</h1>
+        <p style="margin-top: 1rem; color: #6b7280;">
+          This application requires JavaScript to run.
+        </p>
+        <p style="margin-top: 1rem;">
+          <a href="https://github.com/yourusername/imaginary-crime-lab" style="color: #3b82f6;">
+            View source on GitHub →
+          </a>
+        </p>
+      </div>
+    </noscript>
+    
+    <!-- React app entry point -->
+    <script type="module" src="/src/main.jsx"></script>
+    
+    <!-- Analytics (optional - add your tracking) -->
+    <!-- <script defer data-domain="yourdomain.com" src="https://plausible.io/js/script.js"></script> -->
+  </body>
+</html>
