@@ -15,10 +15,9 @@ account_id = "your-account-id-here"
 
 # Environment variables (set via wrangler secret put)
 # DO NOT commit actual secrets to this file
-[env.production]
-vars = {
-  SHOPIFY_STORE_DOMAIN = "your-store.myshopify.com"
-}
+
+[env.production.vars]
+SHOPIFY_STORE_DOMAIN = "your-store.myshopify.com"
 
 # Secrets to set manually:
 # wrangler secret put NEON_DATABASE_URL
@@ -27,10 +26,8 @@ vars = {
 # wrangler secret put SHOPIFY_ADMIN_TOKEN
 
 # Development environment
-[env.development]
-vars = {
-  SHOPIFY_STORE_DOMAIN = "your-dev-store.myshopify.com"
-}
+[env.development.vars]
+SHOPIFY_STORE_DOMAIN = "your-dev-store.myshopify.com"
 
 # Bindings (if using KV, Durable Objects, etc.)
 # [[kv_namespaces]]
