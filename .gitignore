@@ -1,5 +1,7 @@
 /attic/
 
+/frontend/dist/
+
 shopify/product-ids.json
 shopify/update-neon.sql
 
