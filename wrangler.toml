@@ -12,7 +12,7 @@ account_id = "0fac1e4324a9b6001e559ee14093caec"
 # DO NOT commit actual secrets to this file
 
 [env.production]
-name = "crime-lab-api"
+name = "crime-lab"
 
 [env.production.vars]
 SHOPIFY_STORE_DOMAIN = "crime-lab.myshopify.com"
