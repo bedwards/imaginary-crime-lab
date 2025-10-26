@@ -18,7 +18,8 @@
     "tail": "wrangler tail --env production"
   },
   "dependencies": {
-    "@neondatabase/serverless": "^1.0.2"
+    "@neondatabase/serverless": "^1.0.2",
+    "dotenv": "^17.2.3"
   },
   "repository": {
     "type": "git",

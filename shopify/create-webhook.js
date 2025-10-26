@@ -1,6 +1,7 @@
-const storeDomain = process.env.SHOPIFY_STORE;
+require('dotenv').config({ path: '../.env' });
+const storeDomain = process.env.SHOPIFY_STORE_DOMAIN;
 const accessToken = process.env.SHOPIFY_ADMIN_TOKEN;
-const workerUrl = process.argv[2];
+const workerUrl = process.env.VITE_API_BASE;
 
 async function createWebhook() {
     const response = await fetch(
@@ -22,6 +23,12 @@ async function createWebhook() {
     );
 
     const result = await response.json();
+
+    if (!response.ok || result.errors) {
+        console.error('❌ Error:', JSON.stringify(result, null, 2));
+        process.exit(1);
+    }
+
     console.log(`✅ Webhook created: ${result.webhook.id}`);
 }
 

@@ -1,6 +1,6 @@
-// shopify/create-products.js
 const fs = require('fs');
 const path = require('path');
+require('dotenv').config({ path: '../.env' });
 
 const productsFile = path.join(__dirname, 'evidence-products.json');
 const products = JSON.parse(fs.readFileSync(productsFile, 'utf8'));
@@ -24,7 +24,7 @@ async function createProduct(product, storeDomain, accessToken) {
 }
 
 async function main() {
-    const storeDomain = process.env.SHOPIFY_STORE;
+    const storeDomain = process.env.SHOPIFY_STORE_DOMAIN;
     const accessToken = process.env.SHOPIFY_ADMIN_TOKEN;
 
     if (!storeDomain || !accessToken) {
