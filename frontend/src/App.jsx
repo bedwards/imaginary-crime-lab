@@ -64,14 +64,15 @@ export default function CrimeLab() {
   };
 
   const purchaseCart = async () => {
-    await fetch(`${API_BASE}/checkout`, {
+    const response = await fetch(`${API_BASE}/checkout`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ items: cart })
     });
-    setCart([]);
-    alert('Purchase complete! Check Active Cases for solved mysteries...');
-    fetchInitialData();
+    const { checkout_url } = await response.json();
+
+    // Redirect to Shopify checkout
+    window.location.href = checkout_url;
   };
 
   const CaseCard = ({ caseData }) => {
