@@ -421,7 +421,8 @@ async function handleOrderWebhook(request, env) {
   return jsonResponse({
     success: true,
     cases_solved: caseIds.length,
-    case_titles: solvedCases.map(c => c.title)
+    case_titles: solvedCases.map(c => c.title),
+    redirect_url: 'https://bedwards.github.io/imaginary-crime-lab/'
   });
 }
 

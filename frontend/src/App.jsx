@@ -64,14 +64,26 @@ export default function CrimeLab() {
   };
 
   const purchaseCart = async () => {
+    const evidence_ids = cart.map(item => item.id);
+
+    // Determine which cases can be solved with this evidence
+    const solvable_case_ids = cases
+      .filter(c => {
+        const required = c.required_evidence || [];
+        return required.length > 0 && required.every(id => evidence_ids.includes(id));
+      })
+      .map(c => c.id);
+
     const response = await fetch(`${API_BASE}/checkout`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ items: cart })
+      body: JSON.stringify({
+        evidence_ids,
+        case_ids: solvable_case_ids
+      })
     });
     const { checkout_url } = await response.json();
 
-    // Redirect to Shopify checkout
     window.location.href = checkout_url;
   };
 
