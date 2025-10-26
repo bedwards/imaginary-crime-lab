@@ -17,15 +17,90 @@ function jsonResponse(data, status = 200, headers = {}) {
   });
 }
 
-// MongoDB connection helper using native driver approach
-async function connectMongoDB(env) {
-  const { MongoClient } = await import('mongodb');
-  if (!env.MONGODB_URI) {
-    throw new Error('MONGODB_URI not configured');
+// MongoDB Data API (HTTP-based, works in Workers)
+async function mongoInsert(env, collection, document) {
+  if (!env.MONGODB_DATA_API_URL || !env.MONGODB_API_KEY) {
+    console.warn('MongoDB not configured - skipping insert');
+    return { insertedId: 'mock' };
   }
-  const client = new MongoClient(env.MONGODB_URI);
-  await client.connect();
-  return client.db('crimelab');
+
+  const response = await fetch(`${env.MONGODB_DATA_API_URL}/action/insertOne`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'api-key': env.MONGODB_API_KEY,
+    },
+    body: JSON.stringify({
+      dataSource: env.MONGODB_CLUSTER || 'Cluster0',
+      database: 'crimelab',
+      collection,
+      document,
+    }),
+  });
+
+  if (!response.ok) {
+    const error = await response.text();
+    throw new Error(`MongoDB insertOne failed: ${response.status} ${error}`);
+  }
+
+  return response.json();
+}
+
+async function mongoFind(env, collection, filter = {}, options = {}) {
+  if (!env.MONGODB_DATA_API_URL || !env.MONGODB_API_KEY) {
+    console.warn('MongoDB not configured - returning empty results');
+    return { documents: [] };
+  }
+
+  const response = await fetch(`${env.MONGODB_DATA_API_URL}/action/find`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'api-key': env.MONGODB_API_KEY,
+    },
+    body: JSON.stringify({
+      dataSource: env.MONGODB_CLUSTER || 'Cluster0',
+      database: 'crimelab',
+      collection,
+      filter,
+      ...options,
+    }),
+  });
+
+  if (!response.ok) {
+    const error = await response.text();
+    throw new Error(`MongoDB find failed: ${response.status} ${error}`);
+  }
+
+  return response.json();
+}
+
+async function mongoAggregate(env, collection, pipeline) {
+  if (!env.MONGODB_DATA_API_URL || !env.MONGODB_API_KEY) {
+    console.warn('MongoDB not configured - returning empty results');
+    return { documents: [] };
+  }
+
+  const response = await fetch(`${env.MONGODB_DATA_API_URL}/action/aggregate`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'api-key': env.MONGODB_API_KEY,
+    },
+    body: JSON.stringify({
+      dataSource: env.MONGODB_CLUSTER || 'Cluster0',
+      database: 'crimelab',
+      collection,
+      pipeline,
+    }),
+  });
+
+  if (!response.ok) {
+    const error = await response.text();
+    throw new Error(`MongoDB aggregate failed: ${response.status} ${error}`);
+  }
+
+  return response.json();
 }
 
 // Query Neon Postgres
@@ -217,9 +292,7 @@ async function handlePostActivity(request, env) {
   try {
     const activity = await request.json();
     
-    const db = await connectMongoDB(env);
-    
-    await db.collection('activities').insertOne({
+    await mongoInsert(env, 'activities', {
       ...activity,
       timestamp: new Date(),
       worker_id: env.CF_RAY || crypto.randomUUID().split('-')[0],
@@ -243,67 +316,92 @@ async function handleActivityStream(env) {
 
   const stream = new ReadableStream({
     async start(controller) {
-      try {
-        const db = await connectMongoDB(env);
-        
-        // Send initial connection message
-        controller.enqueue(encoder.encode(`data: ${JSON.stringify({
-          type: 'connected',
-          timestamp: new Date().toISOString()
-        })}\n\n`));
+      // Send initial connection message
+      controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+        type: 'connected',
+        timestamp: new Date().toISOString(),
+        mongodb_configured: !!(env.MONGODB_DATA_API_URL && env.MONGODB_API_KEY)
+      })}\n\n`));
 
-        // Poll for new activities every 3 seconds
-        const interval = setInterval(async () => {
-          try {
-            const activities = await db.collection('activities')
-              .find({ timestamp: { $gt: lastTimestamp } })
-              .sort({ timestamp: 1 })
-              .limit(10)
-              .toArray();
+      // If MongoDB not configured, send mock data and exit
+      if (!env.MONGODB_DATA_API_URL || !env.MONGODB_API_KEY) {
+        const mockInterval = setInterval(() => {
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+            type: 'connection_count',
+            count: Math.floor(Math.random() * 5) + 1,
+            timestamp: new Date().toISOString(),
+            mock: true
+          })}\n\n`));
+        }, 5000);
 
-            if (activities.length > 0) {
-              for (const activity of activities) {
-                controller.enqueue(encoder.encode(`data: ${JSON.stringify({
-                  type: activity.type,
-                  data: activity.data,
-                  timestamp: activity.timestamp.toISOString()
-                })}\n\n`));
-              }
-              lastTimestamp = activities[activities.length - 1].timestamp;
-            }
-
-            // Also send connection count
-            const activeCount = await db.collection('activities')
-              .distinct('data.session_id', {
-                timestamp: { $gte: new Date(Date.now() - 30000) }
-              });
-
-            controller.enqueue(encoder.encode(`data: ${JSON.stringify({
-              type: 'connection_count',
-              count: activeCount.length,
-              timestamp: new Date().toISOString()
-            })}\n\n`));
-
-          } catch (error) {
-            console.error('Stream poll error:', error);
-          }
-        }, 3000);
-
-        // Cleanup after 5 minutes
         setTimeout(() => {
-          clearInterval(interval);
+          clearInterval(mockInterval);
           controller.close();
-        }, 300000);
-
-      } catch (error) {
-        console.error('Stream initialization error:', error);
-        controller.enqueue(encoder.encode(`data: ${JSON.stringify({
-          type: 'error',
-          error: error.message,
-          timestamp: new Date().toISOString()
-        })}\n\n`));
-        controller.close();
+        }, 60000);
+        return;
       }
+
+      // Poll for new activities every 3 seconds
+      const interval = setInterval(async () => {
+        try {
+          const result = await mongoFind(env, 'activities', 
+            { timestamp: { $gt: { $date: lastTimestamp.toISOString() } } },
+            { sort: { timestamp: 1 }, limit: 10 }
+          );
+
+          const activities = result.documents || [];
+
+          if (activities.length > 0) {
+            for (const activity of activities) {
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+                type: activity.type,
+                data: activity.data,
+                timestamp: activity.timestamp
+              })}\n\n`));
+            }
+            lastTimestamp = new Date(activities[activities.length - 1].timestamp);
+          }
+
+          // Also send active session count
+          const sessionsResult = await mongoAggregate(env, 'activities', [
+            {
+              $match: {
+                timestamp: { $gte: { $date: new Date(Date.now() - 30000).toISOString() } }
+              }
+            },
+            {
+              $group: {
+                _id: '$data.session_id'
+              }
+            },
+            {
+              $count: 'total'
+            }
+          ]);
+
+          const count = sessionsResult.documents?.[0]?.total || 0;
+
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+            type: 'connection_count',
+            count,
+            timestamp: new Date().toISOString()
+          })}\n\n`));
+
+        } catch (error) {
+          console.error('Stream poll error:', error);
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+            type: 'error',
+            error: error.message,
+            timestamp: new Date().toISOString()
+          })}\n\n`));
+        }
+      }, 3000);
+
+      // Cleanup after 5 minutes
+      setTimeout(() => {
+        clearInterval(interval);
+        controller.close();
+      }, 300000);
     },
   });
 
@@ -320,32 +418,25 @@ async function handleActivityStream(env) {
 // MongoDB Analytics using Aggregation Pipeline
 async function handleActivityAnalytics(env) {
   try {
-    const db = await connectMongoDB(env);
     const now = new Date();
-    const oneHourAgo = new Date(now - 3600000);
     const oneDayAgo = new Date(now - 86400000);
 
     // Run multiple aggregations in parallel
     const [
-      recentActivities,
-      topCases,
-      topEvidence,
-      activityTimeline,
-      activityTypes
+      recentResult,
+      topCasesResult,
+      topEvidenceResult,
+      activityTypesResult
     ] = await Promise.all([
       // Recent 20 activities
-      db.collection('activities')
-        .find()
-        .sort({ timestamp: -1 })
-        .limit(20)
-        .toArray(),
+      mongoFind(env, 'activities', {}, { sort: { timestamp: -1 }, limit: 20 }),
 
       // Top 5 most viewed cases (last 24h)
-      db.collection('activities').aggregate([
+      mongoAggregate(env, 'activities', [
         {
           $match: {
             type: 'case_viewed',
-            timestamp: { $gte: oneDayAgo }
+            timestamp: { $gte: { $date: oneDayAgo.toISOString() } }
           }
         },
         {
@@ -357,14 +448,14 @@ async function handleActivityAnalytics(env) {
         },
         { $sort: { views: -1 } },
         { $limit: 5 }
-      ]).toArray(),
+      ]),
 
       // Top evidence items added to cart
-      db.collection('activities').aggregate([
+      mongoAggregate(env, 'activities', [
         {
           $match: {
             type: 'cart_add',
-            timestamp: { $gte: oneDayAgo }
+            timestamp: { $gte: { $date: oneDayAgo.toISOString() } }
           }
         },
         {
@@ -375,35 +466,13 @@ async function handleActivityAnalytics(env) {
         },
         { $sort: { adds: -1 } },
         { $limit: 10 }
-      ]).toArray(),
-
-      // Activity timeline (events per 10-minute bucket for last hour)
-      db.collection('activities').aggregate([
-        {
-          $match: {
-            timestamp: { $gte: oneHourAgo }
-          }
-        },
-        {
-          $group: {
-            _id: {
-              $dateTrunc: {
-                date: '$timestamp',
-                unit: 'minute',
-                binSize: 10
-              }
-            },
-            count: { $sum: 1 }
-          }
-        },
-        { $sort: { _id: 1 } }
-      ]).toArray(),
+      ]),
 
       // Activity type breakdown
-      db.collection('activities').aggregate([
+      mongoAggregate(env, 'activities', [
         {
           $match: {
-            timestamp: { $gte: oneDayAgo }
+            timestamp: { $gte: { $date: oneDayAgo.toISOString() } }
           }
         },
         {
@@ -413,30 +482,26 @@ async function handleActivityAnalytics(env) {
           }
         },
         { $sort: { count: -1 } }
-      ]).toArray()
+      ])
     ]);
 
     return jsonResponse({
-      recent_activities: recentActivities.map(a => ({
+      recent_activities: (recentResult.documents || []).map(a => ({
         type: a.type,
         data: a.data,
         timestamp: a.timestamp,
         worker_id: a.worker_id
       })),
-      top_cases: topCases.map(c => ({
+      top_cases: (topCasesResult.documents || []).map(c => ({
         case_id: c._id,
         views: c.views,
         last_viewed: c.last_viewed
       })),
-      top_evidence: topEvidence.map(e => ({
+      top_evidence: (topEvidenceResult.documents || []).map(e => ({
         evidence_id: e._id,
         cart_adds: e.adds
       })),
-      activity_timeline: activityTimeline.map(t => ({
-        time: t._id,
-        count: t.count
-      })),
-      activity_types: activityTypes.map(t => ({
+      activity_types: (activityTypesResult.documents || []).map(t => ({
         type: t._id,
         count: t.count
       })),
@@ -450,7 +515,6 @@ async function handleActivityAnalytics(env) {
       recent_activities: [],
       top_cases: [],
       top_evidence: [],
-      activity_timeline: [],
       activity_types: []
     }, 500);
   }
@@ -527,8 +591,7 @@ async function handleCreateCheckout(request, env) {
 
   // Log checkout creation to MongoDB
   try {
-    const db = await connectMongoDB(env);
-    await db.collection('activities').insertOne({
+    await mongoInsert(env, 'activities', {
       type: 'checkout_created',
       timestamp: new Date(),
       worker_id: env.CF_RAY || 'unknown',
@@ -570,8 +633,7 @@ async function handleOrderWebhook(request, env) {
     );
 
     // Log to MongoDB
-    const db = await connectMongoDB(env);
-    await db.collection('activities').insertOne({
+    await mongoInsert(env, 'activities', {
       type: 'case_solved',
       timestamp: new Date(),
       worker_id: env.CF_RAY || 'webhook',
