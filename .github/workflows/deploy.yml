@@ -50,7 +50,7 @@ jobs:
       - name: Build frontend
         working-directory: ./frontend
         env:
-          VITE_API_BASE: https://crime-lab-api.0fac1e4324a9b6001e559ee14093caec.workers.dev
+          VITE_API_BASE: https://crime-lab.brian-mabry-edwards.workers.dev
         run: npm run build
 
       - name: Deploy to GitHub Pages
