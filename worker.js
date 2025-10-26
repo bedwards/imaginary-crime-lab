@@ -358,66 +358,55 @@ async function handleOrderWebhook(request, env) {
     return jsonResponse({ success: false, error: 'Database not configured' });
   }
 
-  // Extract product IDs from line items
-  const productIds = order.line_items?.map(item => item.product_id.toString()) || [];
+  // Extract case IDs from customAttributes (Storefront API) or note_attributes (Admin API)
+  const customAttrs = order.customAttributes || order.note_attributes || [];
+  const caseIdsAttr = customAttrs.find(attr => attr.key === 'case_ids' || attr.name === 'case_ids');
 
-  if (productIds.length === 0) {
-    return jsonResponse({ success: false, error: 'No products in order' });
+  if (!caseIdsAttr?.value) {
+    console.error('No case_ids found in order:', JSON.stringify(customAttrs));
+    return jsonResponse({ success: false, error: 'No case_ids in order' });
   }
 
-  // Find all cases that could be solved with these products
+  const caseIds = caseIdsAttr.value.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
+
+  if (caseIds.length === 0) {
+    return jsonResponse({ success: false, error: 'Invalid case_ids' });
+  }
+
+  const productIds = order.line_items?.map(item => item.product_id.toString()) || [];
   const sql = neon(env.NEON_DATABASE_URL);
 
-  // Get cases where ALL required evidence is in the purchased products
-  const solvedCases = await sql`
-    SELECT DISTINCT c.id, c.title
-    FROM cases c
-    WHERE c.solved_at IS NULL
-    AND NOT EXISTS (
-      SELECT 1 
-      FROM case_evidence ce 
-      WHERE ce.case_id = c.id 
-      AND ce.is_critical = true
-      AND ce.evidence_id = ANY(${productIds}::text[]) = false
-    )
-    AND EXISTS (
-      SELECT 1
-      FROM case_evidence ce
-      WHERE ce.case_id = c.id
+  // Mark the specified cases as solved
+  await sql`
+    UPDATE cases 
+    SET solved_at = NOW() 
+    WHERE id = ANY(${caseIds}::int[]) AND solved_at IS NULL
+  `;
+
+  // Record purchase
+  await sql`
+    INSERT INTO purchases (order_id, evidence_ids, case_ids, total_amount)
+    VALUES (
+      ${order.id.toString()}, 
+      ${productIds}::text[], 
+      ${caseIds}::int[], 
+      ${order.total_price}
     )
   `;
 
-  // Mark cases as solved
-  const caseIds = solvedCases.map(c => c.id);
-
-  if (caseIds.length > 0) {
-    await sql`
-      UPDATE cases 
-      SET solved_at = NOW() 
-      WHERE id = ANY(${caseIds}::int[])
-    `;
-
-    // Record purchase
-    await sql`
-      INSERT INTO purchases (order_id, evidence_ids, case_ids, total_amount)
-      VALUES (${order.id.toString()}, ${productIds}::text[], ${caseIds}::int[], ${order.total_price})
-    `;
-
-    // Log to MongoDB if configured
-    if (env.MONGODB_API_KEY) {
-      await queryMongoDB(env, 'activities', 'insertOne', {
-        type: 'case_solved',
-        case_ids: caseIds,
-        order_id: order.id.toString(),
-        timestamp: new Date(),
-      });
-    }
+  // Log to MongoDB
+  if (env.MONGODB_API_KEY) {
+    await queryMongoDB(env, 'activities', 'insertOne', {
+      type: 'case_solved',
+      case_ids: caseIds,
+      order_id: order.id.toString(),
+      timestamp: new Date(),
+    });
   }
 
   return jsonResponse({
     success: true,
     cases_solved: caseIds.length,
-    case_titles: solvedCases.map(c => c.title),
     redirect_url: 'https://bedwards.github.io/imaginary-crime-lab/'
   });
 }
