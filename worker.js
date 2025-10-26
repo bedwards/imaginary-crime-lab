@@ -386,34 +386,71 @@ async function handleCreateCheckout(request, env) {
 async function handleOrderWebhook(request, env) {
   const order = await request.json();
 
-  // Extract case IDs from custom attributes
-  const caseIdsAttr = order.note_attributes?.find(attr => attr.name === 'case_ids');
-  if (!caseIdsAttr) {
-    return jsonResponse({ success: false, error: 'No case IDs' });
+  if (!env.NEON_DATABASE_URL) {
+    return jsonResponse({ success: false, error: 'Database not configured' });
   }
 
-  const caseIds = caseIdsAttr.value.split(',').map(id => parseInt(id));
+  // Extract product IDs from line items
+  const productIds = order.line_items?.map(item => item.product_id.toString()) || [];
 
-  // If databases are configured, update them
-  if (env.NEON_API_KEY) {
-    for (const caseId of caseIds) {
-      await queryNeon(env,
-        'UPDATE cases SET solved_at = NOW() WHERE id = $1 AND solved_at IS NULL',
-        [caseId]
-      );
+  if (productIds.length === 0) {
+    return jsonResponse({ success: false, error: 'No products in order' });
+  }
+
+  // Find all cases that could be solved with these products
+  const sql = neon(env.NEON_DATABASE_URL);
+
+  // Get cases where ALL required evidence is in the purchased products
+  const solvedCases = await sql`
+    SELECT DISTINCT c.id, c.title
+    FROM cases c
+    WHERE c.solved_at IS NULL
+    AND NOT EXISTS (
+      SELECT 1 
+      FROM case_evidence ce 
+      WHERE ce.case_id = c.id 
+      AND ce.is_critical = true
+      AND ce.evidence_id NOT IN ${sql(productIds)}
+    )
+    AND EXISTS (
+      SELECT 1
+      FROM case_evidence ce
+      WHERE ce.case_id = c.id
+    )
+  `;
+
+  // Mark cases as solved
+  const caseIds = solvedCases.map(c => c.id);
+
+  if (caseIds.length > 0) {
+    await sql`
+      UPDATE cases 
+      SET solved_at = NOW() 
+      WHERE id IN ${sql(caseIds)}
+    `;
+
+    // Record purchase
+    await sql`
+      INSERT INTO purchases (order_id, evidence_ids, case_ids, total_amount)
+      VALUES (${order.id.toString()}, ${productIds}, ${caseIds}, ${order.total_price})
+    `;
+
+    // Log to MongoDB if configured
+    if (env.MONGODB_API_KEY) {
+      await queryMongoDB(env, 'activities', 'insertOne', {
+        type: 'case_solved',
+        case_ids: caseIds,
+        order_id: order.id.toString(),
+        timestamp: new Date(),
+      });
     }
   }
 
-  if (env.MONGODB_API_KEY) {
-    await queryMongoDB(env, 'activities', 'insertOne', {
-      type: 'case_solved',
-      case_ids: caseIds,
-      order_id: order.id,
-      timestamp: new Date(),
-    });
-  }
-
-  return jsonResponse({ success: true, cases_solved: caseIds.length });
+  return jsonResponse({
+    success: true,
+    cases_solved: caseIds.length,
+    case_titles: solvedCases.map(c => c.title)
+  });
 }
 
 function jsonResponse(data, status = 200, extraHeaders = {}) {
