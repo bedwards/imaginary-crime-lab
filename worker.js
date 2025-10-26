@@ -286,8 +286,11 @@ async function handleActivityStream(_) {
 async function handleCreateCheckout(request, env) {
   const { variant_ids, case_ids } = await request.json();
 
-  if (!env.SHOPIFY_STOREFRONT_TOKEN) {
-    throw new Error("Must set SHOPIFY_STOREFRONT_TOKEN");
+  if (!variant_ids || variant_ids.length === 0) {
+    return jsonResponse({
+      checkout_url: null,
+      error: 'Cart is empty'
+    });
   }
 
   const lines = variant_ids.map(vid => ({
@@ -333,17 +336,18 @@ async function handleCreateCheckout(request, env) {
   );
 
   const checkoutData = await shopifyResponse.json();
-  const checkoutUrl = checkoutData.data?.checkoutCreate?.checkout?.webUrl;
-  if (!checkoutUrl) {
-    const data = JSON.stringify(checkoutData, null, 2);
-    console.log(`checkout_data: ${data}`);
-  } else {
-    console.log(`checkout_url: ${checkoutUrl}`);
+  const cart = checkoutData.data?.cartCreate?.cart;
+  const errors = checkoutData.data?.cartCreate?.userErrors;
+
+  if (!cart || errors?.length > 0) {
+    console.error('Cart creation failed:', JSON.stringify(errors || checkoutData, null, 2));
+    return jsonResponse({
+      checkout_url: null,
+      error: errors?.[0]?.message || 'Failed to create cart'
+    });
   }
 
-  return jsonResponse({
-    checkout_url: checkoutUrl || 'https://crime-lab.myshopify.com',
-  });
+  return jsonResponse({ checkout_url: cart.checkoutUrl });
 }
 
 // Webhook handler for completed orders
