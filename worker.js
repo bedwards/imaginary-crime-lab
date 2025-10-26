@@ -292,23 +292,21 @@ async function handleCreateCheckout(request, env) {
   const { evidence_ids, case_ids } = await request.json();
 
   if (!env.SHOPIFY_STOREFRONT_TOKEN) {
-    throw new Error("Must set SHOPIFY_STOREFRONT_TOKEN");;
+    throw new Error("Must set SHOPIFY_STOREFRONT_TOKEN");
   }
 
-  // Get evidence details
   const evidenceResponse = await handleGetEvidence(env);
   const allEvidence = await evidenceResponse.json();
   const selectedEvidence = allEvidence.filter(e => evidence_ids.includes(e.id));
 
-  // Create checkout via Shopify Storefront API
   const mutation = `
-    mutation checkoutCreate($input: CheckoutCreateInput!) {
-      checkoutCreate(input: $input) {
-        checkout {
+    mutation cartCreate($input: CartInput!) {
+      cartCreate(input: $input) {
+        cart {
           id
-          webUrl
+          checkoutUrl
         }
-        checkoutUserErrors {
+        userErrors {
           field
           message
         }
@@ -316,13 +314,13 @@ async function handleCreateCheckout(request, env) {
     }
   `;
 
-  const lineItems = selectedEvidence.map(e => ({
-    variantId: e.variant_id,
+  const lines = selectedEvidence.map(e => ({
+    merchandiseId: e.variant_id,
     quantity: 1,
   }));
 
   const shopifyResponse = await fetch(
-    `https://${env.SHOPIFY_STORE_DOMAIN}/api/2025-10/graphql.json`,
+    `https://${env.SHOPIFY_STORE_DOMAIN}/api/2024-10/graphql.json`,
     {
       method: 'POST',
       headers: {
@@ -333,8 +331,8 @@ async function handleCreateCheckout(request, env) {
         query: mutation,
         variables: {
           input: {
-            lineItems,
-            customAttributes: [
+            lines,
+            attributes: [
               { key: 'case_ids', value: case_ids.join(',') }
             ],
           },
@@ -353,8 +351,7 @@ async function handleCreateCheckout(request, env) {
   }
 
   return jsonResponse({
-    // checkout_url: checkoutUrl,
-    checkout_url: 'https://crime-lab.myshopify.com/checkouts/cn/hWN4ZHgNK8YVkDr8cltvsdyT/en-us/post-purchase?preview_theme_id=180471005494',
+    checkout_url: checkoutUrl || 'https://crime-lab.myshopify.com',
   });
 }
 
