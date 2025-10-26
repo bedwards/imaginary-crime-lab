@@ -15,6 +15,17 @@ export default function CrimeLab() {
   const [showCart, setShowCart] = useState(false);
 
   useEffect(() => {
+    const savedCart = localStorage.getItem('crime-lab-cart');
+    if (savedCart) {
+      setCart(JSON.parse(savedCart));
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('crime-lab-cart', JSON.stringify(cart));
+  }, [cart]);
+
+  useEffect(() => {
     fetchInitialData();
     subscribeToLiveActivity();
   }, []);

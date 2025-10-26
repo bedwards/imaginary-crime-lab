@@ -166,7 +166,7 @@ async function handleGetEvidence(env) {
 
   // Fetch from Shopify Admin REST API
   const shopifyResponse = await fetch(
-    `https://${env.SHOPIFY_STORE_DOMAIN}/admin/api/2024-10/products.json?limit=50`,
+    `https://${env.SHOPIFY_STORE_DOMAIN}/admin/api/2025-10/products.json?limit=50`,
     {
       method: 'GET',
       headers: {
@@ -322,7 +322,7 @@ async function handleCreateCheckout(request, env) {
   }));
 
   const shopifyResponse = await fetch(
-    `https://${env.SHOPIFY_STORE_DOMAIN}/api/2024-10/graphql.json`,
+    `https://${env.SHOPIFY_STORE_DOMAIN}/api/2025-10/graphql.json`,
     {
       method: 'POST',
       headers: {
@@ -354,36 +354,45 @@ async function handleCreateCheckout(request, env) {
 async function handleOrderWebhook(request, env) {
   const order = await request.json();
 
+  // Log the entire payload for debugging
+  console.log('=== ORDER WEBHOOK RECEIVED ===');
+  console.log('Order ID:', order.id);
+  console.log('Custom attrs:', JSON.stringify(order.customAttributes || []));
+  console.log('Note attrs:', JSON.stringify(order.note_attributes || []));
+  console.log('Full order keys:', Object.keys(order).join(', '));
+
   if (!env.NEON_DATABASE_URL) {
     return jsonResponse({ success: false, error: 'Database not configured' });
   }
 
-  // Extract case IDs from customAttributes (Storefront API) or note_attributes (Admin API)
   const customAttrs = order.customAttributes || order.note_attributes || [];
   const caseIdsAttr = customAttrs.find(attr => attr.key === 'case_ids' || attr.name === 'case_ids');
 
   if (!caseIdsAttr?.value) {
-    console.error('No case_ids found in order:', JSON.stringify(customAttrs));
-    return jsonResponse({ success: false, error: 'No case_ids in order' });
+    console.error('❌ No case_ids found');
+    console.error('Available attributes:', JSON.stringify(customAttrs));
+    // Don't fail - just return success so Shopify doesn't retry
+    return jsonResponse({ success: true, warning: 'No case_ids found' });
   }
 
   const caseIds = caseIdsAttr.value.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
 
   if (caseIds.length === 0) {
-    return jsonResponse({ success: false, error: 'Invalid case_ids' });
+    console.error('❌ Invalid case_ids:', caseIdsAttr.value);
+    return jsonResponse({ success: true, warning: 'Invalid case_ids' });
   }
 
   const productIds = order.line_items?.map(item => item.product_id.toString()) || [];
   const sql = neon(env.NEON_DATABASE_URL);
 
-  // Mark the specified cases as solved
+  console.log('✅ Solving cases:', caseIds);
+
   await sql`
     UPDATE cases 
     SET solved_at = NOW() 
     WHERE id = ANY(${caseIds}::int[]) AND solved_at IS NULL
   `;
 
-  // Record purchase
   await sql`
     INSERT INTO purchases (order_id, evidence_ids, case_ids, total_amount)
     VALUES (
@@ -394,7 +403,6 @@ async function handleOrderWebhook(request, env) {
     )
   `;
 
-  // Log to MongoDB
   if (env.MONGODB_API_KEY) {
     await queryMongoDB(env, 'activities', 'insertOne', {
       type: 'case_solved',
@@ -403,6 +411,8 @@ async function handleOrderWebhook(request, env) {
       timestamp: new Date(),
     });
   }
+
+  console.log('✅ Webhook complete, solved', caseIds.length, 'cases');
 
   return jsonResponse({
     success: true,
