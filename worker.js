@@ -291,10 +291,9 @@ async function handleActivityStream(_) {
 async function handleCreateCheckout(request, env) {
   const { evidence_ids, case_ids } = await request.json();
 
-  // Return mock checkout URL if Shopify is not configured
   if (!env.SHOPIFY_STOREFRONT_TOKEN) {
     return jsonResponse({
-      checkout_url: 'https://example.myshopify.com/checkout/mock',
+      checkout_url: 'https://crime-lab.myshopify.com/checkouts/cn/hWN4ZHgNK8YVkDr8cltvsdyT/en-us/post-purchase?preview_theme_id=180471005494',
       mock: true
     });
   }
