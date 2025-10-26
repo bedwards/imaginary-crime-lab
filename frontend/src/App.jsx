@@ -64,13 +64,14 @@ export default function CrimeLab() {
   };
 
   const purchaseCart = async () => {
+    // Extract evidence IDs from cart
     const evidence_ids = cart.map(item => item.id);
 
-    // Determine which cases can be solved with this evidence
+    // Find which cases can be solved with this evidence
     const solvable_case_ids = cases
       .filter(c => {
         const required = c.required_evidence || [];
-        return required.length > 0 && required.every(id => evidence_ids.includes(id));
+        return required.length > 0 && required.every(req => evidence_ids.includes(req));
       })
       .map(c => c.id);
 
@@ -84,6 +85,7 @@ export default function CrimeLab() {
     });
     const { checkout_url } = await response.json();
 
+    // Redirect to Shopify checkout
     window.location.href = checkout_url;
   };
 
