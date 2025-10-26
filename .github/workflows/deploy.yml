@@ -71,16 +71,14 @@ jobs:
         with:
           node-version: '20'
 
+      - name: Install dependencies
+        run: npm install
+
       - name: Test Worker locally
         run: |
-          npm install -g wrangler
-          wrangler dev &
+          npx wrangler dev &
           sleep 5
           curl -f http://localhost:8787/metrics || exit 1
-
-      - name: Lint Worker code
-        run: |
-          npx eslint worker.js || echo "No linting errors"
 
   notify:
     name: Deployment Notification
