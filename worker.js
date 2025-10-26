@@ -145,23 +145,16 @@ async function handleGetEvidence(env) {
   // Check Worker cache first
   const cache = caches.default;
   const cacheKey = new Request('https://cache/evidence', { method: 'GET' });
-  let response = await cache.match(cacheKey);
+  // let response = await cache.match(cacheKey);
 
-  if (response) {
-    const data = await response.json();
-    return jsonResponse(data, 200, { 'X-Cache': 'HIT' });
-  }
+  // if (response) {
+  //   const data = await response.json();
+  //   return jsonResponse(data, 200, { 'X-Cache': 'HIT' });
+  // }
 
   // Return mock data if Shopify is not configured
   if (!env.SHOPIFY_ADMIN_TOKEN) {
-    const mockEvidence = [
-      { id: 'FINGERPRINT_CARD', name: 'Fingerprint Analysis Card', description: 'Lifted prints from the crime scene', price: '29.00' },
-      { id: 'GUEST_MANIFEST', name: 'Dinner Party Guest Manifest', description: 'Official guest list', price: '15.00' },
-      { id: 'SECURITY_LOG', name: 'Estate Security Log', description: '24-hour security camera logs', price: '25.00' },
-      { id: 'FIBER_SAMPLE', name: 'Forensic Fiber Sample', description: 'Microscopic fiber analysis', price: '35.00' },
-      { id: 'TEMPERATURE_LOG', name: 'Laboratory Temperature Log', description: 'Automated temperature monitoring', price: '20.00' },
-    ];
-    return jsonResponse(mockEvidence, 200, { 'X-Cache': 'MOCK' });
+    throw new Error("Must set SHOPIFY_ADMIN_TOKEN");
   }
 
   // Fetch from Shopify Admin REST API
@@ -189,6 +182,8 @@ async function handleGetEvidence(env) {
     price: product.variants[0]?.price || '0.00',
     variant_id: `gid://shopify/ProductVariant/${product.variants[0]?.id}`,
   }));
+
+  console.log('Fetched evidence:', JSON.stringify(evidence.slice(0, 2), null, 2));
 
   // Cache for 5 minutes
   const cacheResponse = new Response(JSON.stringify(evidence), {
