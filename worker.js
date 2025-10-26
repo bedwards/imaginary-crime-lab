@@ -344,10 +344,15 @@ async function handleCreateCheckout(request, env) {
   );
 
   const checkoutData = await shopifyResponse.json();
-  console.log(`checkout_url: ${checkoutData.data?.checkoutCreate?.checkout?.webUrl}`)
+  const checkoutUrl = checkoutData.data?.checkoutCreate?.checkout?.webUrl;
+  if (!checkoutUrl) {
+    console.log(`checkout_data: ${checkoutData}`);
+  } else {
+    console.log(`checkout_url: ${checkoutUrl}`);
+  }
 
   return jsonResponse({
-    // checkout_url: checkoutData.data?.checkoutCreate?.checkout?.webUrl || 'https://crime-lab.myshopify.com/checkouts/cn/hWN4ZHgNK8YVkDr8cltvsdyT/en-us/post-purchase?preview_theme_id=180471005494',
+    // checkout_url: checkoutUrl,
     checkout_url: 'https://crime-lab.myshopify.com/checkouts/cn/hWN4ZHgNK8YVkDr8cltvsdyT/en-us/post-purchase?preview_theme_id=180471005494',
   });
 }
