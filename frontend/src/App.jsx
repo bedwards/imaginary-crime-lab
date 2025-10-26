@@ -355,3 +355,6 @@ export default function CrimeLab() {
           )}
         </div>
       )}
+    </div>
+  );
+}
