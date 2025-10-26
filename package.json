@@ -19,5 +19,16 @@
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.0.2"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bedwards/imaginary-crime-lab.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/bedwards/imaginary-crime-lab/issues"
+  },
+  "homepage": "https://github.com/bedwards/imaginary-crime-lab#readme"
 }
