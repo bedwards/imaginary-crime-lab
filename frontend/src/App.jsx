@@ -12,6 +12,7 @@ export default function CrimeLab() {
   const [activeView, setActiveView] = useState('cases');
   const [dbMetrics, setDbMetrics] = useState({});
   const [liveConnections, setLiveConnections] = useState(0);
+  const [showCart, setShowCart] = useState(false);
 
   useEffect(() => {
     fetchInitialData();
@@ -58,6 +59,10 @@ export default function CrimeLab() {
     });
   };
 
+  const removeFromCart = (index) => {
+    setCart(prev => prev.filter((_, i) => i !== index));
+  };
+
   const purchaseCart = async () => {
     await fetch(`${API_BASE}/checkout`, {
       method: 'POST',
@@ -76,10 +81,9 @@ export default function CrimeLab() {
     const solved = caseData.solved_at || progress === 100;
 
     return (
-      <div className={`relative overflow-hidden rounded-2xl p-6 transition-all duration-300 hover:scale-[1.02] ${
-        solved ? 'bg-gradient-to-br from-green-50 to-emerald-100 border-2 border-green-400 shadow-green-200' : 
+      <div className={`relative overflow-hidden rounded-2xl p-6 transition-all duration-300 hover:scale-[1.02] ${solved ? 'bg-gradient-to-br from-green-50 to-emerald-100 border-2 border-green-400 shadow-green-200' :
         'bg-white border-2 border-slate-200'
-      } shadow-xl`}>
+        } shadow-xl`}>
         <div className="flex items-start justify-between mb-4">
           <div>
             <div className="flex items-center gap-2 mb-2">
@@ -90,18 +94,17 @@ export default function CrimeLab() {
           </div>
           {solved && <div className="text-4xl animate-bounce">🎉</div>}
         </div>
-        
+
         <p className="text-slate-600 mb-6 leading-relaxed">{caseData.description}</p>
-        
+
         <div className="space-y-3">
           <div className="flex items-center justify-between text-sm">
             <span className="font-semibold text-slate-700">Progress</span>
             <span className="font-mono text-slate-600">{Math.round(progress)}%</span>
           </div>
           <div className="h-3 bg-slate-200 rounded-full overflow-hidden">
-            <div className={`h-full transition-all duration-500 ${
-              solved ? 'bg-gradient-to-r from-green-500 to-emerald-600' : 'bg-gradient-to-r from-blue-500 to-cyan-600'
-            }`} style={{ width: `${progress}%` }} />
+            <div className={`h-full transition-all duration-500 ${solved ? 'bg-gradient-to-r from-green-500 to-emerald-600' : 'bg-gradient-to-r from-blue-500 to-cyan-600'
+              }`} style={{ width: `${progress}%` }} />
           </div>
         </div>
 
@@ -109,11 +112,10 @@ export default function CrimeLab() {
           <div className="text-sm font-semibold text-slate-700 mb-3">Required Evidence:</div>
           <div className="grid grid-cols-2 gap-2">
             {requiredEvidence.map(ev => (
-              <div key={ev.id} className={`px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
-                collectedEvidence.some(c => c.id === ev.id) ? 
-                'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-md' : 
+              <div key={ev.id} className={`px-3 py-2 rounded-lg text-xs font-medium transition-colors ${collectedEvidence.some(c => c.id === ev.id) ?
+                'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-md' :
                 'bg-slate-100 text-slate-600'
-              }`}>
+                }`}>
                 {ev.name}
               </div>
             ))}
@@ -244,18 +246,20 @@ export default function CrimeLab() {
             <button
               key={tab.id}
               onClick={() => setActiveView(tab.id)}
-              className={`px-5 py-2.5 rounded-xl font-semibold transition-all duration-200 flex items-center gap-2 ${
-                activeView === tab.id
-                  ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-lg scale-105'
-                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-              }`}
+              className={`px-5 py-2.5 rounded-xl font-semibold transition-all duration-200 flex items-center gap-2 ${activeView === tab.id
+                ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-lg scale-105'
+                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                }`}
             >
               <span>{tab.icon}</span>
               {tab.label}
             </button>
           ))}
           <div className="flex-1" />
-          <button className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-green-600 to-emerald-600 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-200 flex items-center gap-2 hover:scale-105">
+          <button
+            onClick={() => setShowCart(!showCart)}
+            className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-green-600 to-emerald-600 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-200 flex items-center gap-2 hover:scale-105"
+          >
             <ShoppingCart size={20} />
             Cart ({cart.length})
           </button>
@@ -299,33 +303,55 @@ export default function CrimeLab() {
       </div>
 
       {/* Cart Sidebar */}
-      {cart.length > 0 && (
+      {showCart && (
         <div className="fixed bottom-8 right-8 bg-white/95 backdrop-blur-lg border-2 border-blue-300 rounded-2xl shadow-2xl p-6 w-96 animate-in slide-in-from-bottom">
-          <h3 className="font-bold text-xl mb-4 text-slate-800">Cart Summary</h3>
-          <div className="space-y-2 mb-6 max-h-48 overflow-y-auto">
-            {cart.map((item, i) => (
-              <div key={i} className="flex justify-between text-sm bg-slate-50 p-2 rounded-lg">
-                <span className="text-slate-700">{item.name}</span>
-                <span className="font-bold text-blue-600">${item.price}</span>
-              </div>
-            ))}
-          </div>
-          <div className="border-t pt-4">
-            <div className="flex justify-between font-bold mb-4 text-lg">
-              <span className="text-slate-800">Total</span>
-              <span className="bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
-                ${cart.reduce((sum, item) => sum + parseFloat(item.price), 0).toFixed(2)}
-              </span>
-            </div>
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="font-bold text-xl text-slate-800">Cart Summary</h3>
             <button
-              onClick={purchaseCart}
-              className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white py-4 rounded-xl font-bold shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"
+              onClick={() => setShowCart(false)}
+              className="text-slate-400 hover:text-slate-600 transition-colors"
             >
-              Purchase & Solve Cases
+              ✕
             </button>
           </div>
+
+          {cart.length === 0 ? (
+            <div className="text-center py-8">
+              <ShoppingCart size={48} className="mx-auto text-slate-300 mb-3" />
+              <p className="text-slate-500">Your cart is empty</p>
+              <p className="text-sm text-slate-400 mt-2">Add evidence from the Evidence Store</p>
+            </div>
+          ) : (
+            <>
+              <div className="space-y-2 mb-6 max-h-48 overflow-y-auto">
+                {cart.map((item, i) => (
+                  <div key={i} className="flex justify-between items-center text-sm bg-slate-50 p-2 rounded-lg">
+                    <span className="text-slate-700 flex-1">{item.name}</span>
+                    <span className="font-bold text-blue-600 mr-2">${item.price}</span>
+                    <button
+                      onClick={() => removeFromCart(i)}
+                      className="text-red-500 hover:text-red-700 text-xs px-2 py-1"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <div className="border-t pt-4">
+                <div className="flex justify-between font-bold mb-4 text-lg">
+                  <span className="text-slate-800">Total</span>
+                  <span className="bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
+                    ${cart.reduce((sum, item) => sum + parseFloat(item.price), 0).toFixed(2)}
+                  </span>
+                </div>
+                <button
+                  onClick={purchaseCart}
+                  className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white py-4 rounded-xl font-bold shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"
+                >
+                  Purchase & Solve Cases
+                </button>
+              </div>
+            </>
+          )}
         </div>
       )}
-    </div>
-  );
-}
