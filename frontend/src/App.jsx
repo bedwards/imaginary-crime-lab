@@ -13,17 +13,18 @@ export default function CrimeLab() {
   const [dbMetrics, setDbMetrics] = useState({});
   const [liveConnections, setLiveConnections] = useState(0);
   const [showCart, setShowCart] = useState(false);
+  const [purchasedEvidence, setPurchasedEvidence] = useState([]);
 
-  // useEffect(() => {
-  //   const savedCart = localStorage.getItem('crime-lab-cart');
-  //   if (savedCart) {
-  //     setCart(JSON.parse(savedCart));
-  //   }
-  // }, []);
+  // Remove purchased items from evidence pane
+  const availableEvidence = evidence.filter(e => !purchasedEvidence.includes(e.id));
 
-  // useEffect(() => {
-  //   localStorage.setItem('crime-lab-cart', JSON.stringify(cart));
-  // }, [cart]);
+  // Fetch purchased evidence on load
+  useEffect(() => {
+    fetch(`${API_BASE}/purchased-evidence`)
+      .then(r => r.json())
+      .then(setPurchasedEvidence)
+      .catch(console.error);
+  }, []);
 
   useEffect(() => {
     fetchInitialData();
@@ -77,19 +78,10 @@ export default function CrimeLab() {
   const purchaseCart = async () => {
     const variant_ids = cart.map(item => item.variant_id);
 
-    const solvable_case_ids = cases
-      .filter(c => {
-        const required = c.required_evidence || [];
-        return required.length > 0 && required.every(req =>
-          cart.some(item => item.id === req)
-        );
-      })
-      .map(c => c.id);
-
     const response = await fetch(`${API_BASE}/checkout`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ variant_ids, case_ids: solvable_case_ids })
+      body: JSON.stringify({ variant_ids })
     });
 
     const data = await response.json();
@@ -99,12 +91,13 @@ export default function CrimeLab() {
       return;
     }
 
+    setCart([]);
     window.location.href = data.checkout_url;
   };
 
   const CaseCard = ({ caseData }) => {
     const requiredEvidence = evidence.filter(e => caseData.required_evidence?.includes(e.id));
-    const collectedEvidence = requiredEvidence.filter(e => cart.some(c => c.id === e.id));
+    const collectedEvidence = requiredEvidence.filter(e => purchasedEvidence.includes(e.id));
     const progress = requiredEvidence.length ? (collectedEvidence.length / requiredEvidence.length) * 100 : 0;
     const solved = caseData.solved_at || progress === 100;
 
@@ -162,74 +155,91 @@ export default function CrimeLab() {
     );
   };
 
-  const InternalView = () => (
-    <div className="space-y-6">
-      <div className="bg-gradient-to-br from-blue-50 to-cyan-100 border-2 border-blue-300 rounded-2xl p-6 shadow-xl">
-        <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-blue-900">
-          <Database size={24} />
-          Database Metrics (Neon Postgres)
-        </h3>
-        <div className="grid grid-cols-3 gap-4">
-          <div className="bg-white/70 backdrop-blur-sm rounded-xl p-4">
-            <div className="text-sm text-blue-700 mb-1">Total Cases</div>
-            <div className="text-3xl font-bold text-blue-900">{dbMetrics.total_cases || 0}</div>
-          </div>
-          <div className="bg-white/70 backdrop-blur-sm rounded-xl p-4">
-            <div className="text-sm text-green-700 mb-1">Solved Cases</div>
-            <div className="text-3xl font-bold text-green-700">{dbMetrics.solved_cases || 0}</div>
-          </div>
-          <div className="bg-white/70 backdrop-blur-sm rounded-xl p-4">
-            <div className="text-sm text-purple-700 mb-1">Evidence Items</div>
-            <div className="text-3xl font-bold text-purple-700">{dbMetrics.evidence_count || 0}</div>
-          </div>
-        </div>
-      </div>
+  const InternalView = () => {
+    const resetProgress = async () => {
+      if (!confirm('Reset all progress? This will clear purchases and unsolved cases.')) return;
 
-      <div className="bg-gradient-to-br from-purple-50 to-pink-100 border-2 border-purple-300 rounded-2xl p-6 shadow-xl">
-        <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-purple-900">
-          <Zap size={24} />
-          Live Activity (MongoDB Atlas)
-        </h3>
-        <div className="bg-white/70 backdrop-blur-sm rounded-xl p-4 mb-4">
-          <div className="text-sm text-purple-700 mb-1">Active Connections</div>
-          <div className="text-4xl font-bold text-purple-800 flex items-center gap-2">
-            {liveConnections}
-            <span className="w-3 h-3 bg-purple-500 rounded-full animate-pulse"></span>
-          </div>
-        </div>
-        <div className="space-y-2 max-h-64 overflow-y-auto">
-          {activities.map((activity, i) => (
-            <div key={i} className="bg-white/80 backdrop-blur-sm p-3 rounded-xl text-xs font-mono border border-purple-200">
-              <span className="text-purple-600">{new Date(activity.timestamp).toLocaleTimeString()}</span>
-              {' · '}
-              <span className="font-semibold text-purple-900">{activity.type}</span>
+      await fetch(`${API_BASE}/reset-progress`, { method: 'POST' });
+      window.location.reload();
+    };
+
+    return (
+      <div>
+        <div className="space-y-6">
+          <div className="bg-gradient-to-br from-blue-50 to-cyan-100 border-2 border-blue-300 rounded-2xl p-6 shadow-xl">
+            <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-blue-900">
+              <Database size={24} />
+              Database Metrics (Neon Postgres)
+            </h3>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="bg-white/70 backdrop-blur-sm rounded-xl p-4">
+                <div className="text-sm text-blue-700 mb-1">Total Cases</div>
+                <div className="text-3xl font-bold text-blue-900">{dbMetrics.total_cases || 0}</div>
+              </div>
+              <div className="bg-white/70 backdrop-blur-sm rounded-xl p-4">
+                <div className="text-sm text-green-700 mb-1">Solved Cases</div>
+                <div className="text-3xl font-bold text-green-700">{dbMetrics.solved_cases || 0}</div>
+              </div>
+              <div className="bg-white/70 backdrop-blur-sm rounded-xl p-4">
+                <div className="text-sm text-purple-700 mb-1">Evidence Items</div>
+                <div className="text-3xl font-bold text-purple-700">{dbMetrics.evidence_count || 0}</div>
+              </div>
             </div>
-          ))}
-        </div>
-      </div>
+          </div>
 
-      <div className="bg-gradient-to-br from-amber-50 to-yellow-100 border-2 border-amber-300 rounded-2xl p-6 shadow-xl">
-        <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-amber-900">
-          <FileText size={24} />
-          Shopify Integration
-        </h3>
-        <div className="space-y-3 bg-white/70 backdrop-blur-sm rounded-xl p-4">
-          <div className="flex justify-between items-center">
-            <span className="text-amber-800">Storefront API:</span>
-            <span className="px-3 py-1 bg-green-500 text-white text-xs font-bold rounded-full">CONNECTED</span>
+          <div className="bg-gradient-to-br from-purple-50 to-pink-100 border-2 border-purple-300 rounded-2xl p-6 shadow-xl">
+            <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-purple-900">
+              <Zap size={24} />
+              Live Activity (MongoDB Atlas)
+            </h3>
+            <div className="bg-white/70 backdrop-blur-sm rounded-xl p-4 mb-4">
+              <div className="text-sm text-purple-700 mb-1">Active Connections</div>
+              <div className="text-4xl font-bold text-purple-800 flex items-center gap-2">
+                {liveConnections}
+                <span className="w-3 h-3 bg-purple-500 rounded-full animate-pulse"></span>
+              </div>
+            </div>
+            <div className="space-y-2 max-h-64 overflow-y-auto">
+              {activities.map((activity, i) => (
+                <div key={i} className="bg-white/80 backdrop-blur-sm p-3 rounded-xl text-xs font-mono border border-purple-200">
+                  <span className="text-purple-600">{new Date(activity.timestamp).toLocaleTimeString()}</span>
+                  {' · '}
+                  <span className="font-semibold text-purple-900">{activity.type}</span>
+                </div>
+              ))}
+            </div>
           </div>
-          <div className="flex justify-between items-center">
-            <span className="text-amber-800">Products Synced:</span>
-            <span className="font-bold text-amber-900">{evidence.length}</span>
-          </div>
-          <div className="flex justify-between items-center">
-            <span className="text-amber-800">Cache Strategy:</span>
-            <span className="font-mono text-xs text-amber-700">Edge w/ 5min TTL</span>
+
+          <div className="bg-gradient-to-br from-amber-50 to-yellow-100 border-2 border-amber-300 rounded-2xl p-6 shadow-xl">
+            <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-amber-900">
+              <FileText size={24} />
+              Shopify Integration
+            </h3>
+            <div className="space-y-3 bg-white/70 backdrop-blur-sm rounded-xl p-4">
+              <div className="flex justify-between items-center">
+                <span className="text-amber-800">Storefront API:</span>
+                <span className="px-3 py-1 bg-green-500 text-white text-xs font-bold rounded-full">CONNECTED</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-amber-800">Products Synced:</span>
+                <span className="font-bold text-amber-900">{evidence.length}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-amber-800">Cache Strategy:</span>
+                <span className="font-mono text-xs text-amber-700">Edge w/ 5min TTL</span>
+              </div>
+            </div>
           </div>
         </div>
+        <button
+          onClick={resetProgress}
+          className="mt-4 px-4 py-2 bg-red-600 text-white rounded"
+        >
+          Reset Progress
+        </button>
       </div>
-    </div>
-  );
+    );
+  };
 
   if (loading) {
     return (
@@ -306,7 +316,7 @@ export default function CrimeLab() {
 
         {activeView === 'evidence' && (
           <div className="grid grid-cols-3 gap-6">
-            {evidence.map(item => (
+            {availableEvidence.map(item => (
               <div key={item.id} className="group bg-white rounded-2xl p-6 border-2 border-slate-200 shadow-lg hover:shadow-2xl hover:scale-105 transition-all duration-300 hover:border-blue-400">
                 <div className="text-4xl mb-4">📋</div>
                 <h3 className="font-bold text-xl mb-2 text-slate-800">{item.name}</h3>

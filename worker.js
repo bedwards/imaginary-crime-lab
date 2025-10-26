@@ -20,6 +20,22 @@ export default {
 
     try {
       // Route to handlers
+
+      // Get all purchased evidence
+      if (url.pathname === '/purchased-evidence' && request.method === 'GET') {
+        const purchased = await queryNeon(env, `
+          SELECT evidence_id FROM purchased_evidence
+        `);
+        return jsonResponse(purchased.map(p => p.evidence_id));
+      }
+
+      // Reset progress (clear all purchases and unsolved cases)
+      if (url.pathname === '/reset-progress' && request.method === 'POST') {
+        await queryNeon(env, `DELETE FROM purchased_evidence`);
+        await queryNeon(env, `UPDATE cases SET solved_at = NULL`);
+        return jsonResponse({ success: true });
+      }
+
       if (path === '/cases') {
         return await handleGetCases(env);
       }
@@ -284,7 +300,8 @@ async function handleActivityStream(_) {
 
 // Create Shopify checkout
 async function handleCreateCheckout(request, env) {
-  const { variant_ids, case_ids } = await request.json();
+  const { variant_ids } = await request.json();
+
 
   if (!variant_ids || variant_ids.length === 0) {
     return jsonResponse({
@@ -325,10 +342,7 @@ async function handleCreateCheckout(request, env) {
         query: mutation,
         variables: {
           input: {
-            lines,
-            attributes: [
-              { key: 'case_ids', value: case_ids.join(',') }
-            ],
+            lines
           },
         },
       }),
@@ -354,70 +368,54 @@ async function handleCreateCheckout(request, env) {
 async function handleOrderWebhook(request, env) {
   const order = await request.json();
 
-  // Log the entire payload for debugging
   console.log('=== ORDER WEBHOOK RECEIVED ===');
   console.log('Order ID:', order.id);
-  console.log('Custom attrs:', JSON.stringify(order.customAttributes || []));
-  console.log('Note attrs:', JSON.stringify(order.note_attributes || []));
-  console.log('Full order keys:', Object.keys(order).join(', '));
 
   if (!env.NEON_DATABASE_URL) {
     return jsonResponse({ success: false, error: 'Database not configured' });
   }
 
-  const customAttrs = order.customAttributes || order.note_attributes || [];
-  const caseIdsAttr = customAttrs.find(attr => attr.key === 'case_ids' || attr.name === 'case_ids');
+  // Extract evidence IDs from line items
+  const evidenceIds = order.line_items.map(item => item.product_id.toString());
 
-  if (!caseIdsAttr?.value) {
-    console.error('❌ No case_ids found');
-    console.error('Available attributes:', JSON.stringify(customAttrs));
-    // Don't fail - just return success so Shopify doesn't retry
-    return jsonResponse({ success: true, warning: 'No case_ids found' });
+  // Store purchased evidence globally
+  for (const evidenceId of evidenceIds) {
+    await queryNeon(env, `
+      INSERT INTO purchased_evidence (evidence_id, order_id)
+      VALUES ($1, $2)
+      ON CONFLICT (evidence_id) DO NOTHING
+    `, [evidenceId, order.id.toString()]);
   }
 
-  const caseIds = caseIdsAttr.value.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
+  // Check if any cases are now solved
+  const cases = await queryNeon(env, `
+    SELECT c.id, array_agg(ce.evidence_id) as required
+    FROM cases c
+    LEFT JOIN case_evidence ce ON c.id = ce.case_id
+    WHERE c.solved_at IS NULL
+    GROUP BY c.id
+  `);
 
-  if (caseIds.length === 0) {
-    console.error('❌ Invalid case_ids:', caseIdsAttr.value);
-    return jsonResponse({ success: true, warning: 'Invalid case_ids' });
+  const solvedCaseIds = [];
+  for (const c of cases) {
+    const allPurchased = c.required.every(req => evidenceIds.includes(req));
+    if (allPurchased) {
+      solvedCaseIds.push(c.id);
+    }
   }
 
-  const productIds = order.line_items?.map(item => item.product_id.toString()) || [];
-  const sql = neon(env.NEON_DATABASE_URL);
-
-  console.log('✅ Solving cases:', caseIds);
-
-  await sql`
-    UPDATE cases 
-    SET solved_at = NOW() 
-    WHERE id = ANY(${caseIds}::int[]) AND solved_at IS NULL
-  `;
-
-  await sql`
-    INSERT INTO purchases (order_id, evidence_ids, case_ids, total_amount)
-    VALUES (
-      ${order.id.toString()}, 
-      ${productIds}::text[], 
-      ${caseIds}::int[], 
-      ${order.total_price}
-    )
-  `;
-
-  if (env.MONGODB_API_KEY) {
-    await queryMongoDB(env, 'activities', 'insertOne', {
-      type: 'case_solved',
-      case_ids: caseIds,
-      order_id: order.id.toString(),
-      timestamp: new Date(),
-    });
+  if (solvedCaseIds.length > 0) {
+    await queryNeon(env, `
+      UPDATE cases 
+      SET solved_at = NOW() 
+      WHERE id = ANY($1)
+    `, [solvedCaseIds]);
   }
-
-  console.log('✅ Webhook complete, solved', caseIds.length, 'cases');
 
   return jsonResponse({
     success: true,
-    cases_solved: caseIds.length,
-    redirect_url: 'https://bedwards.github.io/imaginary-crime-lab/'
+    evidence_count: evidenceIds.length,
+    solved_cases: solvedCaseIds
   });
 }
 
