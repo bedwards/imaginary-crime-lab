@@ -221,7 +221,7 @@ export default function CrimeLab() {
           <div className="flex items-center gap-4 mb-3">
             <div className="text-6xl">🔬</div>
             <div>
-              <h1 className="text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-200 via-cyan-200 to-teal-200">
+              <h1 className="text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-200 via-cyan-200 to-teal-200 leading-tight">
                 Imaginary Crime Lab
               </h1>
               <p className="text-cyan-200 text-lg mt-2">Cases solve themselves when you collect all the evidence</p>

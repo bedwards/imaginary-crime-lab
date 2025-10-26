@@ -1,9 +1,9 @@
 // eslint.config.js — ESLint 9+ flat config (Oct 2025)
 
 import js from "@eslint/js";
-import globals from "globals";
-import pluginImport from "eslint-plugin-import";
 import eslintConfigPrettier from "eslint-config-prettier";
+import pluginImport from "eslint-plugin-import";
+import globals from "globals";
 
 // If you also want TypeScript or React, see the notes below.
 
