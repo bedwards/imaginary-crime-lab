@@ -1,6 +1,6 @@
 # Wrangler configuration for Imaginary Crime Lab Worker
 
-name = "crime-lab-api"
+name = "crime-lab"
 main = "worker.js"
 compatibility_date = "2024-10-25"
 compatibility_flags = ["nodejs_compat"]
@@ -19,7 +19,7 @@ SHOPIFY_STORE_DOMAIN = "crime-lab.myshopify.com"
 
 # Development environment
 [env.development]
-name = "crime-lab-api-dev"
+name = "crime-lab-dev"
 
 [env.development.vars]
 SHOPIFY_STORE_DOMAIN = "crime-lab.myshopify.com"
