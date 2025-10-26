@@ -59,13 +59,13 @@ export default {
 
 async function queryNeon(env, query, params = []) {
   const sql = neon(env.NEON_DATABASE_URL);
-  
+
   if (params.length > 0) {
     // Parameterized query
     const result = await sql.query(query, params);
     return result.rows;
   }
-  
+
   // Simple query without params - just pass the raw SQL string
   const result = await sql.query(query);
   return result.rows;
@@ -76,7 +76,7 @@ async function queryMongoDB(env, collection, operation, document = {}) {
   const url = new URL(env.MONGODB_URI);
   const database = url.pathname.slice(1) || 'crimelab';
 
-  const response = await fetch(`${ env.MONGODB_DATA_API } /action/${ operation } `, {
+  const response = await fetch(`${env.MONGODB_DATA_API} /action/${operation} `, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -91,7 +91,7 @@ async function queryMongoDB(env, collection, operation, document = {}) {
   });
 
   if (!response.ok) {
-    throw new Error(`MongoDB operation failed: ${ response.statusText } `);
+    throw new Error(`MongoDB operation failed: ${response.statusText} `);
   }
 
   return response.json();
@@ -194,13 +194,13 @@ async function handleGetEvidence(env) {
 
   const shopifyResponse = await fetch(
     `https://${env.SHOPIFY_STORE_DOMAIN}/api/2024-10/graphql.json`,
-  {
-    method: 'POST',
+    {
+      method: 'POST',
       headers: {
-      'Content-Type': 'application/json',
+        'Content-Type': 'application/json',
         'X-Shopify-Storefront-Access-Token': env.SHOPIFY_STOREFRONT_TOKEN,
       },
-    body: JSON.stringify({ query }),
+      body: JSON.stringify({ query }),
     }
   );
 
