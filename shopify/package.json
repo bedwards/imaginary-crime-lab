@@ -6,7 +6,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "create-products": "node create-products.js",
-    "create-webhook": "node create-webhook.js"
+    "create-webhook": "node create-webhook.js",
+    "generate-sql": "node generate-sql.js"
   },
   "keywords": [],
   "author": "",

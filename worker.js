@@ -410,7 +410,7 @@ async function handleOrderWebhook(request, env) {
       FROM case_evidence ce 
       WHERE ce.case_id = c.id 
       AND ce.is_critical = true
-      AND ce.evidence_id NOT IN ${sql(productIds)}
+      AND ce.evidence_id = ANY(${productIds}::text[]) = false
     )
     AND EXISTS (
       SELECT 1
@@ -426,13 +426,13 @@ async function handleOrderWebhook(request, env) {
     await sql`
       UPDATE cases 
       SET solved_at = NOW() 
-      WHERE id IN ${sql(caseIds)}
+      WHERE id = ANY(${caseIds}::int[])
     `;
 
     // Record purchase
     await sql`
       INSERT INTO purchases (order_id, evidence_ids, case_ids, total_amount)
-      VALUES (${order.id.toString()}, ${productIds}, ${caseIds}, ${order.total_price})
+      VALUES (${order.id.toString()}, ${productIds}::text[], ${caseIds}::int[], ${order.total_price})
     `;
 
     // Log to MongoDB if configured
