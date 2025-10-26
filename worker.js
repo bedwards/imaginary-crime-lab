@@ -284,35 +284,14 @@ async function handleActivityStream(_) {
 
 // Create Shopify checkout
 async function handleCreateCheckout(request, env) {
-  const { evidence_ids, case_ids } = await request.json();
+  const { variant_ids, case_ids } = await request.json();
 
   if (!env.SHOPIFY_STOREFRONT_TOKEN) {
     throw new Error("Must set SHOPIFY_STOREFRONT_TOKEN");
   }
 
-  const evidenceResponse = await handleGetEvidence(env);
-  const allEvidence = await evidenceResponse.json();
-  const selectedEvidence = allEvidence.filter(e => evidence_ids.includes(e.id));
-
-  // Filter out evidence with invalid/missing variants
-  const validEvidence = selectedEvidence.filter(e => {
-    if (!e.variant_id || e.variant_id.includes('undefined')) {
-      console.warn(`Skipping evidence ${e.id}: invalid variant_id`);
-      return false;
-    }
-    return true;
-  });
-
-  if (validEvidence.length === 0) {
-    console.error('No valid evidence items found for checkout');
-    return jsonResponse({
-      checkout_url: 'https://crime-lab.myshopify.com',
-      error: 'No valid items in cart'
-    });
-  }
-
-  const lines = validEvidence.map(e => ({
-    merchandiseId: e.variant_id,
+  const lines = variant_ids.map(vid => ({
+    merchandiseId: vid,
     quantity: 1,
   }));
 
