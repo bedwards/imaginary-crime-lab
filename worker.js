@@ -294,6 +294,28 @@ async function handleCreateCheckout(request, env) {
   const allEvidence = await evidenceResponse.json();
   const selectedEvidence = allEvidence.filter(e => evidence_ids.includes(e.id));
 
+  // Filter out evidence with invalid/missing variants
+  const validEvidence = selectedEvidence.filter(e => {
+    if (!e.variant_id || e.variant_id.includes('undefined')) {
+      console.warn(`Skipping evidence ${e.id}: invalid variant_id`);
+      return false;
+    }
+    return true;
+  });
+
+  if (validEvidence.length === 0) {
+    console.error('No valid evidence items found for checkout');
+    return jsonResponse({
+      checkout_url: 'https://crime-lab.myshopify.com',
+      error: 'No valid items in cart'
+    });
+  }
+
+  const lines = validEvidence.map(e => ({
+    merchandiseId: e.variant_id,
+    quantity: 1,
+  }));
+
   const mutation = `
     mutation cartCreate($input: CartInput!) {
       cartCreate(input: $input) {
@@ -308,11 +330,6 @@ async function handleCreateCheckout(request, env) {
       }
     }
   `;
-
-  const lines = selectedEvidence.map(e => ({
-    merchandiseId: e.variant_id,
-    quantity: 1,
-  }));
 
   const shopifyResponse = await fetch(
     `https://${env.SHOPIFY_STORE_DOMAIN}/api/2024-10/graphql.json`,
