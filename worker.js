@@ -346,7 +346,8 @@ async function handleCreateCheckout(request, env) {
   const checkoutData = await shopifyResponse.json();
   const checkoutUrl = checkoutData.data?.checkoutCreate?.checkout?.webUrl;
   if (!checkoutUrl) {
-    console.log(`checkout_data: ${checkoutData}`);
+    const data = JSON.stringify(checkoutData, null, 2);
+    console.log(`checkout_data: ${data}`);
   } else {
     console.log(`checkout_url: ${checkoutUrl}`);
   }
