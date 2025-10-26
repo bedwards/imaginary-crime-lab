@@ -346,7 +346,7 @@ async function handleCreateCheckout(request, env) {
   const checkoutData = await shopifyResponse.json();
 
   return jsonResponse({
-    checkout_url: checkoutData.data?.checkoutCreate?.checkout?.webUrl || 'https://example.myshopify.com/checkout',
+    checkout_url: checkoutData.data?.checkoutCreate?.checkout?.webUrl || 'https://crime-lab.myshopify.com/checkouts/cn/hWN4ZHgNK8YVkDr8cltvsdyT/en-us/post-purchase?preview_theme_id=180471005494',
   });
 }
 
