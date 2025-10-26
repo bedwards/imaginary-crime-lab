@@ -1,121 +1,126 @@
-// Cloudflare Worker - API Gateway for Imaginary Crime Lab
-
 import { neon } from '@neondatabase/serverless';
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type',
 };
 
-export default {
-  async fetch(request, env, _) {
-    // Handle CORS preflight
-    if (request.method === 'OPTIONS') {
-      return new Response(null, { headers: CORS_HEADERS });
-    }
+function jsonResponse(data, status = 200, headers = {}) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: {
+      'Content-Type': 'application/json',
+      ...CORS_HEADERS,
+      ...headers,
+    },
+  });
+}
 
-    const url = new URL(request.url);
-    const path = url.pathname;
+// MongoDB connection helper using native driver approach
+async function connectMongoDB(env) {
+  const { MongoClient } = await import('mongodb');
+  if (!env.MONGODB_URI) {
+    throw new Error('MONGODB_URI not configured');
+  }
+  const client = new MongoClient(env.MONGODB_URI);
+  await client.connect();
+  return client.db('crimelab');
+}
 
-    try {
-      // Route to handlers
-
-      // Get all purchased evidence
-      if (url.pathname === '/purchased-evidence' && request.method === 'GET') {
-        const purchased = await queryNeon(env, `
-          SELECT evidence_id FROM purchased_evidence
-        `);
-        return jsonResponse(purchased.map(p => p.evidence_id));
-      }
-
-      // Reset progress (clear all purchases and unsolved cases)
-      if (url.pathname === '/reset-progress' && request.method === 'POST') {
-        await queryNeon(env, `DELETE FROM purchased_evidence`);
-        await queryNeon(env, `UPDATE cases SET solved_at = NULL`);
-        return jsonResponse({ success: true });
-      }
-
-      if (path === '/cases') {
-        return await handleGetCases(env);
-      }
-
-      if (path === '/evidence') {
-        return await handleGetEvidence(env);
-      }
-
-      if (path === '/metrics') {
-        return await handleGetMetrics(env);
-      }
-
-      if (path === '/activity' && request.method === 'POST') {
-        return await handlePostActivity(request, env);
-      }
-
-      if (path === '/activity/stream') {
-        return await handleActivityStream(env);
-      }
-
-      if (path === '/checkout' && request.method === 'POST') {
-        return await handleCreateCheckout(request, env);
-      }
-
-      if (path === '/webhook/order') {
-        return await handleOrderWebhook(request, env);
-      }
-
-      return jsonResponse({ error: 'Not found' }, 404);
-
-    } catch (error) {
-      console.error('Worker error:', error);
-      return jsonResponse({ error: error.message }, 500);
-    }
-  },
-};
-
+// Query Neon Postgres
 async function queryNeon(env, query, params = []) {
+  if (!env.NEON_DATABASE_URL) {
+    throw new Error('NEON_DATABASE_URL not configured');
+  }
+
   const sql = neon(env.NEON_DATABASE_URL);
 
-  if (params.length > 0) {
-    // Parameterized query
-    const result = await sql.query(query, params);
-    return result.rows;
+  if (params.length === 0) {
+    const result = await sql(query);
+    return result;
   }
 
   const result = await sql.query(query, params);
   return result.rows || result;
 }
 
-// Use MongoDB Data API instead of the Node.js driver
-async function queryMongoDB(env, collection, operation, document = {}) {
-  const url = new URL(env.MONGODB_URI);
-  const database = url.pathname.slice(1) || 'crimelab';
+export default {
+  async fetch(request, env) {
+    const url = new URL(request.url);
 
-  const response = await fetch(`${env.MONGODB_DATA_API} /action/${operation} `, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'api-key': env.MONGODB_API_KEY,
-    },
-    body: JSON.stringify({
-      dataSource: env.MONGODB_CLUSTER || 'Cluster0',
-      database,
-      collection,
-      document,
-    }),
-  });
+    if (request.method === 'OPTIONS') {
+      return new Response(null, { headers: CORS_HEADERS });
+    }
 
-  if (!response.ok) {
-    throw new Error(`MongoDB operation failed: ${response.statusText} `);
-  }
+    try {
+      // Routes
+      if (url.pathname === '/cases') {
+        return await handleGetCases(env);
+      }
 
-  return response.json();
-}
+      if (url.pathname === '/evidence') {
+        return await handleGetEvidence(env);
+      }
+
+      if (url.pathname === '/metrics') {
+        return await handleGetMetrics(env);
+      }
+
+      if (url.pathname === '/activity') {
+        if (request.method === 'POST') {
+          return await handlePostActivity(request, env);
+        }
+        return jsonResponse({ error: 'Method not allowed' }, 405);
+      }
+
+      if (url.pathname === '/activity/stream') {
+        return await handleActivityStream(env);
+      }
+
+      if (url.pathname === '/activity/analytics') {
+        return await handleActivityAnalytics(env);
+      }
+
+      if (url.pathname === '/checkout') {
+        if (request.method === 'POST') {
+          return await handleCreateCheckout(request, env);
+        }
+        return jsonResponse({ error: 'Method not allowed' }, 405);
+      }
+
+      if (url.pathname === '/webhook/order') {
+        if (request.method === 'POST') {
+          return await handleOrderWebhook(request, env);
+        }
+        return jsonResponse({ error: 'Method not allowed' }, 405);
+      }
+
+      return jsonResponse({ error: 'Not found' }, 404);
+    } catch (error) {
+      console.error('Worker error:', error);
+      return jsonResponse({
+        error: error.message,
+        stack: error.stack,
+        type: error.constructor.name
+      }, 500);
+    }
+  },
+};
 
 // Get cases from Neon Postgres
 async function handleGetCases(env) {
-  // For now, return mock data if database is not configured
-  if (!env.NEON_API_KEY) {
+  try {
+    const cases = await queryNeon(env, `
+      SELECT id, number, title, description, solution, solved_at, required_evidence
+      FROM cases
+      ORDER BY id
+    `);
+
+    return jsonResponse(cases);
+  } catch (error) {
+    console.error('Error fetching cases:', error);
+    // Return mock data if DB not configured
     return jsonResponse([
       {
         id: 1,
@@ -125,81 +130,48 @@ async function handleGetCases(env) {
         solution: 'The butler did it.',
         solved_at: null,
         required_evidence: ['FINGERPRINT_CARD', 'GUEST_MANIFEST', 'SECURITY_LOG', 'FIBER_SAMPLE']
-      },
-      {
-        id: 2,
-        number: 'C-2024-002',
-        title: 'The Locked Room Mystery',
-        description: 'Dr. Chen was found dead in his laboratory. The door was locked from inside.',
-        solution: 'Suicide by cryogenic exposure.',
-        solved_at: null,
-        required_evidence: ['TEMPERATURE_LOG', 'CHEMICAL_RESIDUE', 'ENCRYPTED_DIARY', 'AUTOPSY_REPORT', 'EXPERIMENT_LOG']
       }
     ]);
   }
-
-  const result = await queryNeon(env, `
-  SELECT
-  c.id,
-    c.case_number as number,
-    c.title,
-    c.description,
-    c.solution,
-    c.solved_at,
-    array_agg(ce.evidence_id) as required_evidence
-    FROM cases c
-    LEFT JOIN case_evidence ce ON c.id = ce.case_id
-    GROUP BY c.id
-    ORDER BY c.case_number
-    `);
-
-  return jsonResponse(result);
 }
 
-// Get evidence from Shopify Admin API (REST)
+// Get evidence from Shopify
 async function handleGetEvidence(env) {
-  // Check Worker cache first
   const cache = caches.default;
-  const cacheKey = new Request('https://cache/evidence', { method: 'GET' });
-  // let response = await cache.match(cacheKey);
+  const cacheKey = new Request(request.url);
 
-  // if (response) {
-  //   const data = await response.json();
-  //   return jsonResponse(data, 200, { 'X-Cache': 'HIT' });
-  // }
-
-  // Return mock data if Shopify is not configured
-  if (!env.SHOPIFY_ADMIN_TOKEN) {
-    throw new Error("Must set SHOPIFY_ADMIN_TOKEN");
+  let cachedResponse = await cache.match(cacheKey);
+  if (cachedResponse) {
+    const clonedResponse = cachedResponse.clone();
+    const body = await clonedResponse.json();
+    return jsonResponse(body, 200, { 'X-Cache': 'HIT' });
   }
 
-  // Fetch from Shopify Admin REST API
-  const shopifyResponse = await fetch(
-    `https://${env.SHOPIFY_STORE_DOMAIN}/admin/api/2025-10/products.json?limit=50`,
+  if (!env.SHOPIFY_STORE_DOMAIN || !env.SHOPIFY_ADMIN_TOKEN) {
+    throw new Error('Shopify not configured: SHOPIFY_STORE_DOMAIN and SHOPIFY_ADMIN_TOKEN required');
+  }
+
+  const response = await fetch(
+    `https://${env.SHOPIFY_STORE_DOMAIN}/admin/api/2024-10/products.json`,
     {
-      method: 'GET',
       headers: {
         'X-Shopify-Access-Token': env.SHOPIFY_ADMIN_TOKEN,
       },
     }
   );
 
-  if (!shopifyResponse.ok) {
-    return jsonResponse({ error: 'Failed to fetch from Shopify' }, 500);
+  if (!response.ok) {
+    throw new Error(`Shopify API error: ${response.status} ${response.statusText}`);
   }
 
-  const shopifyData = await shopifyResponse.json();
-
-  // Transform to our format
-  const evidence = shopifyData.products.map((product) => ({
-    id: product.id.toString(),
+  const data = await response.json();
+  const evidence = data.products.map(product => ({
+    id: product.handle,
     name: product.title,
-    description: product.body_html?.replace(/<[^>]*>/g, '') || '', // Strip HTML
+    description: product.body_html?.replace(/<[^>]*>/g, '') || '',
     price: product.variants[0]?.price || '0.00',
     variant_id: `gid://shopify/ProductVariant/${product.variants[0]?.id}`,
   }));
-
-  console.log('Fetched evidence:', JSON.stringify(evidence.slice(0, 2), null, 2));
 
   // Cache for 5 minutes
   const cacheResponse = new Response(JSON.stringify(evidence), {
@@ -215,76 +187,123 @@ async function handleGetEvidence(env) {
 
 // Get metrics
 async function handleGetMetrics(env) {
-  if (!env.NEON_DATABASE_URL) {
+  try {
+    const [cases, solved, evidence] = await Promise.all([
+      queryNeon(env, 'SELECT COUNT(*) as count FROM cases'),
+      queryNeon(env, 'SELECT COUNT(*) as count FROM cases WHERE solved_at IS NOT NULL'),
+      queryNeon(env, 'SELECT COUNT(DISTINCT evidence_id) as count FROM case_evidence'),
+    ]);
+
+    return jsonResponse({
+      total_cases: parseInt(cases[0]?.count || 0),
+      solved_cases: parseInt(solved[0]?.count || 0),
+      evidence_count: parseInt(evidence[0]?.count || 0),
+      worker_timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error('Error fetching metrics:', error);
     return jsonResponse({
       total_cases: 4,
       solved_cases: 0,
       evidence_count: 20,
       worker_timestamp: new Date().toISOString(),
+      error: 'Database not configured'
     });
   }
-
-  const [cases, solved, evidence] = await Promise.all([
-    queryNeon(env, 'SELECT COUNT(*) as count FROM cases'),
-    queryNeon(env, 'SELECT COUNT(*) as count FROM cases WHERE solved_at IS NOT NULL'),
-    queryNeon(env, 'SELECT COUNT(DISTINCT evidence_id) as count FROM case_evidence'),
-  ]);
-
-  return jsonResponse({
-    total_cases: parseInt(cases[0]?.count || 0),
-    solved_cases: parseInt(solved[0]?.count || 0),
-    evidence_count: parseInt(evidence[0]?.count || 0),
-    worker_timestamp: new Date().toISOString(),
-  });
 }
 
 // Post activity to MongoDB
 async function handlePostActivity(request, env) {
-  const activity = await request.json();
+  try {
+    const activity = await request.json();
+    
+    const db = await connectMongoDB(env);
+    
+    await db.collection('activities').insertOne({
+      ...activity,
+      timestamp: new Date(),
+      worker_id: env.CF_RAY || crypto.randomUUID().split('-')[0],
+    });
 
-  // If MongoDB is not configured, just log and return success
-  if (!env.MONGODB_API_KEY) {
-    console.log('Activity:', activity);
-    return jsonResponse({ success: true, mock: true });
+    console.log('Activity logged:', activity.type);
+    return jsonResponse({ success: true });
+  } catch (error) {
+    console.error('Error logging activity:', error);
+    return jsonResponse({ 
+      success: false, 
+      error: error.message 
+    }, 500);
   }
-
-  await queryMongoDB(env, 'activities', 'insertOne', {
-    ...activity,
-    timestamp: new Date(),
-    worker_id: crypto.randomUUID(),
-  });
-
-  return jsonResponse({ success: true });
 }
 
-// Server-Sent Events for live activity
-async function handleActivityStream(_) {
+// Server-Sent Events for live activity (polling-based for M0 free tier)
+async function handleActivityStream(env) {
   const encoder = new TextEncoder();
+  let lastTimestamp = new Date(Date.now() - 10000); // Start 10s ago
 
-  // Create a simple SSE stream with mock data
   const stream = new ReadableStream({
-    start(controller) {
-      // Send initial data
-      controller.enqueue(encoder.encode(`data: ${JSON.stringify({
-        type: 'connection_established',
-        timestamp: new Date().toISOString()
-      })}\n\n`));
-
-      // Send periodic updates
-      const interval = setInterval(() => {
-        const mockActivity = {
-          type: 'connection_count',
-          count: Math.floor(Math.random() * 10) + 1,
+    async start(controller) {
+      try {
+        const db = await connectMongoDB(env);
+        
+        // Send initial connection message
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+          type: 'connected',
           timestamp: new Date().toISOString()
-        };
-        controller.enqueue(encoder.encode(`data: ${JSON.stringify(mockActivity)}\n\n`));
-      }, 5000);
+        })}\n\n`));
 
-      // Cleanup after 5 minutes
-      setTimeout(() => {
-        clearInterval(interval);
+        // Poll for new activities every 3 seconds
+        const interval = setInterval(async () => {
+          try {
+            const activities = await db.collection('activities')
+              .find({ timestamp: { $gt: lastTimestamp } })
+              .sort({ timestamp: 1 })
+              .limit(10)
+              .toArray();
+
+            if (activities.length > 0) {
+              for (const activity of activities) {
+                controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+                  type: activity.type,
+                  data: activity.data,
+                  timestamp: activity.timestamp.toISOString()
+                })}\n\n`));
+              }
+              lastTimestamp = activities[activities.length - 1].timestamp;
+            }
+
+            // Also send connection count
+            const activeCount = await db.collection('activities')
+              .distinct('data.session_id', {
+                timestamp: { $gte: new Date(Date.now() - 30000) }
+              });
+
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+              type: 'connection_count',
+              count: activeCount.length,
+              timestamp: new Date().toISOString()
+            })}\n\n`));
+
+          } catch (error) {
+            console.error('Stream poll error:', error);
+          }
+        }, 3000);
+
+        // Cleanup after 5 minutes
+        setTimeout(() => {
+          clearInterval(interval);
+          controller.close();
+        }, 300000);
+
+      } catch (error) {
+        console.error('Stream initialization error:', error);
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+          type: 'error',
+          error: error.message,
+          timestamp: new Date().toISOString()
+        })}\n\n`));
         controller.close();
-      }, 300000);
+      }
     },
   });
 
@@ -298,16 +317,158 @@ async function handleActivityStream(_) {
   });
 }
 
+// MongoDB Analytics using Aggregation Pipeline
+async function handleActivityAnalytics(env) {
+  try {
+    const db = await connectMongoDB(env);
+    const now = new Date();
+    const oneHourAgo = new Date(now - 3600000);
+    const oneDayAgo = new Date(now - 86400000);
+
+    // Run multiple aggregations in parallel
+    const [
+      recentActivities,
+      topCases,
+      topEvidence,
+      activityTimeline,
+      activityTypes
+    ] = await Promise.all([
+      // Recent 20 activities
+      db.collection('activities')
+        .find()
+        .sort({ timestamp: -1 })
+        .limit(20)
+        .toArray(),
+
+      // Top 5 most viewed cases (last 24h)
+      db.collection('activities').aggregate([
+        {
+          $match: {
+            type: 'case_viewed',
+            timestamp: { $gte: oneDayAgo }
+          }
+        },
+        {
+          $group: {
+            _id: '$data.case_id',
+            views: { $sum: 1 },
+            last_viewed: { $max: '$timestamp' }
+          }
+        },
+        { $sort: { views: -1 } },
+        { $limit: 5 }
+      ]).toArray(),
+
+      // Top evidence items added to cart
+      db.collection('activities').aggregate([
+        {
+          $match: {
+            type: 'cart_add',
+            timestamp: { $gte: oneDayAgo }
+          }
+        },
+        {
+          $group: {
+            _id: '$data.evidence_id',
+            adds: { $sum: 1 }
+          }
+        },
+        { $sort: { adds: -1 } },
+        { $limit: 10 }
+      ]).toArray(),
+
+      // Activity timeline (events per 10-minute bucket for last hour)
+      db.collection('activities').aggregate([
+        {
+          $match: {
+            timestamp: { $gte: oneHourAgo }
+          }
+        },
+        {
+          $group: {
+            _id: {
+              $dateTrunc: {
+                date: '$timestamp',
+                unit: 'minute',
+                binSize: 10
+              }
+            },
+            count: { $sum: 1 }
+          }
+        },
+        { $sort: { _id: 1 } }
+      ]).toArray(),
+
+      // Activity type breakdown
+      db.collection('activities').aggregate([
+        {
+          $match: {
+            timestamp: { $gte: oneDayAgo }
+          }
+        },
+        {
+          $group: {
+            _id: '$type',
+            count: { $sum: 1 }
+          }
+        },
+        { $sort: { count: -1 } }
+      ]).toArray()
+    ]);
+
+    return jsonResponse({
+      recent_activities: recentActivities.map(a => ({
+        type: a.type,
+        data: a.data,
+        timestamp: a.timestamp,
+        worker_id: a.worker_id
+      })),
+      top_cases: topCases.map(c => ({
+        case_id: c._id,
+        views: c.views,
+        last_viewed: c.last_viewed
+      })),
+      top_evidence: topEvidence.map(e => ({
+        evidence_id: e._id,
+        cart_adds: e.adds
+      })),
+      activity_timeline: activityTimeline.map(t => ({
+        time: t._id,
+        count: t.count
+      })),
+      activity_types: activityTypes.map(t => ({
+        type: t._id,
+        count: t.count
+      })),
+      generated_at: now.toISOString()
+    });
+
+  } catch (error) {
+    console.error('Error fetching analytics:', error);
+    return jsonResponse({
+      error: error.message,
+      recent_activities: [],
+      top_cases: [],
+      top_evidence: [],
+      activity_timeline: [],
+      activity_types: []
+    }, 500);
+  }
+}
+
 // Create Shopify checkout
 async function handleCreateCheckout(request, env) {
-  const { variant_ids } = await request.json();
-
+  const { variant_ids, case_ids } = await request.json();
 
   if (!variant_ids || variant_ids.length === 0) {
     return jsonResponse({
       checkout_url: null,
       error: 'Cart is empty'
     });
+  }
+
+  if (!env.SHOPIFY_STORE_DOMAIN || !env.SHOPIFY_STOREFRONT_TOKEN) {
+    throw new Error('Shopify not configured');
   }
 
   const lines = variant_ids.map(vid => ({
@@ -342,7 +503,10 @@ async function handleCreateCheckout(request, env) {
         query: mutation,
         variables: {
           input: {
-            lines
+            lines,
+            attributes: [
+              { key: 'case_ids', value: JSON.stringify(case_ids) }
+            ]
           },
         },
       }),
@@ -357,75 +521,75 @@ async function handleCreateCheckout(request, env) {
     console.error('Cart creation failed:', JSON.stringify(errors || checkoutData, null, 2));
     return jsonResponse({
       checkout_url: null,
-      error: errors?.[0]?.message || 'Failed to create cart'
+      error: errors?.[0]?.message || 'Failed to create checkout'
     });
   }
 
-  return jsonResponse({ checkout_url: cart.checkoutUrl });
-}
-
-// Webhook handler for completed orders
-async function handleOrderWebhook(request, env) {
-  const order = await request.json();
-
-  console.log('=== ORDER WEBHOOK RECEIVED ===');
-  console.log('Order ID:', order.id);
-
-  if (!env.NEON_DATABASE_URL) {
-    return jsonResponse({ success: false, error: 'Database not configured' });
-  }
-
-  // Extract evidence IDs from line items
-  const evidenceIds = order.line_items.map(item => item.product_id.toString());
-
-  // Store purchased evidence globally
-  for (const evidenceId of evidenceIds) {
-    await queryNeon(env, `
-      INSERT INTO purchased_evidence (evidence_id, order_id)
-      VALUES ($1, $2)
-      ON CONFLICT (evidence_id) DO NOTHING
-    `, [evidenceId, order.id.toString()]);
-  }
-
-  // Check if any cases are now solved
-  const cases = await queryNeon(env, `
-    SELECT c.id, array_agg(ce.evidence_id) as required
-    FROM cases c
-    LEFT JOIN case_evidence ce ON c.id = ce.case_id
-    WHERE c.solved_at IS NULL
-    GROUP BY c.id
-  `);
-
-  const solvedCaseIds = [];
-  for (const c of cases) {
-    const allPurchased = c.required.every(req => evidenceIds.includes(req));
-    if (allPurchased) {
-      solvedCaseIds.push(c.id);
-    }
-  }
-
-  if (solvedCaseIds.length > 0) {
-    await queryNeon(env, `
-      UPDATE cases 
-      SET solved_at = NOW() 
-      WHERE id = ANY($1)
-    `, [solvedCaseIds]);
+  // Log checkout creation to MongoDB
+  try {
+    const db = await connectMongoDB(env);
+    await db.collection('activities').insertOne({
+      type: 'checkout_created',
+      timestamp: new Date(),
+      worker_id: env.CF_RAY || 'unknown',
+      data: {
+        case_ids,
+        evidence_count: variant_ids.length,
+        checkout_id: cart.id
+      }
+    });
+  } catch (error) {
+    console.error('Failed to log checkout activity:', error);
   }
 
   return jsonResponse({
-    success: true,
-    evidence_count: evidenceIds.length,
-    solved_cases: solvedCaseIds
+    checkout_url: cart.checkoutUrl,
+    cart_id: cart.id
   });
 }
 
-function jsonResponse(data, status = 200, extraHeaders = {}) {
-  return new Response(JSON.stringify(data, null, 2), {
-    status,
-    headers: {
-      'Content-Type': 'application/json',
-      ...CORS_HEADERS,
-      ...extraHeaders,
-    },
-  });
+// Handle Shopify order webhook
+async function handleOrderWebhook(request, env) {
+  try {
+    const order = await request.json();
+    
+    // Extract case_ids from order attributes
+    const caseIdsAttr = order.note_attributes?.find(attr => attr.name === 'case_ids');
+    const caseIds = caseIdsAttr ? JSON.parse(caseIdsAttr.value) : [];
+
+    if (caseIds.length === 0) {
+      console.log('No case IDs in order');
+      return jsonResponse({ success: true, message: 'No cases to solve' });
+    }
+
+    // Mark cases as solved in Neon
+    await queryNeon(
+      env,
+      `UPDATE cases SET solved_at = NOW() WHERE id = ANY($1)`,
+      [caseIds]
+    );
+
+    // Log to MongoDB
+    const db = await connectMongoDB(env);
+    await db.collection('activities').insertOne({
+      type: 'case_solved',
+      timestamp: new Date(),
+      worker_id: env.CF_RAY || 'webhook',
+      data: {
+        case_ids: caseIds,
+        order_id: order.id,
+        total_price: order.total_price
+      }
+    });
+
+    console.log(`Solved cases: ${caseIds.join(', ')}`);
+    return jsonResponse({ success: true, solved_cases: caseIds });
+
+  } catch (error) {
+    console.error('Webhook error:', error);
+    return jsonResponse({ 
+      success: false, 
+      error: error.message 
+    }, 500);
+  }
 }

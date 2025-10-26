@@ -51,12 +51,21 @@ CREATE TABLE case_analytics (
     last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Purchased evidence - global tracking of what has been bought
+-- Single global state, no per-user tracking
+CREATE TABLE purchased_evidence (
+    evidence_id VARCHAR(50) PRIMARY KEY, -- Shopify product ID
+    purchased_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    order_id VARCHAR(100) NOT NULL -- Shopify order ID that purchased it
+);
+
 -- Indexes for performance
 CREATE INDEX idx_cases_solved ON cases(solved_at);
 CREATE INDEX idx_case_evidence_case ON case_evidence(case_id);
 CREATE INDEX idx_case_evidence_evidence ON case_evidence(evidence_id);
 CREATE INDEX idx_purchases_completed ON purchases(completed_at);
 CREATE INDEX idx_analytics_case ON case_analytics(case_id);
+CREATE INDEX idx_purchased_evidence_order ON purchased_evidence(order_id);
 
 -- Seed data: Initial cases
 INSERT INTO cases (case_number, title, description, solution, difficulty) VALUES
