@@ -140,7 +140,7 @@ async function handleGetCases(env) {
   return jsonResponse(result);
 }
 
-// Get evidence from Shopify Storefront API
+// Get evidence from Shopify Admin API (REST)
 async function handleGetEvidence(env) {
   // Check Worker cache first
   const cache = caches.default;
@@ -153,7 +153,7 @@ async function handleGetEvidence(env) {
   }
 
   // Return mock data if Shopify is not configured
-  if (!env.SHOPIFY_STOREFRONT_TOKEN) {
+  if (!env.SHOPIFY_ADMIN_TOKEN) {
     const mockEvidence = [
       { id: 'FINGERPRINT_CARD', name: 'Fingerprint Analysis Card', description: 'Lifted prints from the crime scene', price: '29.00' },
       { id: 'GUEST_MANIFEST', name: 'Dinner Party Guest Manifest', description: 'Official guest list', price: '15.00' },
@@ -164,42 +164,14 @@ async function handleGetEvidence(env) {
     return jsonResponse(mockEvidence, 200, { 'X-Cache': 'MOCK' });
   }
 
-  // Fetch from Shopify
-  const query = `
-    query {
-    products(first: 50) {
-        edges {
-          node {
-          id
-          title
-          description
-            priceRange {
-              minVariantPrice {
-              amount
-            }
-          }
-          variants(first: 1) {
-              edges {
-                node {
-                id
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-  `;
-
+  // Fetch from Shopify Admin REST API
   const shopifyResponse = await fetch(
-    `https://${env.SHOPIFY_STORE_DOMAIN}/api/2024-10/graphql.json`,
+    `https://${env.SHOPIFY_STORE_DOMAIN}/admin/api/2024-10/products.json?limit=50`,
     {
-      method: 'POST',
+      method: 'GET',
       headers: {
-        'Content-Type': 'application/json',
-        'X-Shopify-Storefront-Access-Token': env.SHOPIFY_STOREFRONT_TOKEN,
+        'X-Shopify-Access-Token': env.SHOPIFY_ADMIN_TOKEN,
       },
-      body: JSON.stringify({ query }),
     }
   );
 
@@ -210,12 +182,12 @@ async function handleGetEvidence(env) {
   const shopifyData = await shopifyResponse.json();
 
   // Transform to our format
-  const evidence = shopifyData.data.products.edges.map(({ node }) => ({
-    id: node.id.split('/').pop(),
-    name: node.title,
-    description: node.description,
-    price: node.priceRange.minVariantPrice.amount,
-    variant_id: node.variants.edges[0].node.id,
+  const evidence = shopifyData.products.map((product) => ({
+    id: product.id.toString(),
+    name: product.title,
+    description: product.body_html?.replace(/<[^>]*>/g, '') || '', // Strip HTML
+    price: product.variants[0]?.price || '0.00',
+    variant_id: `gid://shopify/ProductVariant/${product.variants[0]?.id}`,
   }));
 
   // Cache for 5 minutes
@@ -225,7 +197,7 @@ async function handleGetEvidence(env) {
       'Cache-Control': 'public, max-age=300',
     },
   });
-  await cache.put(cacheKey, cacheResponse.clone());
+  await cache.put(cacheKey, cacheResponse);
 
   return jsonResponse(evidence, 200, { 'X-Cache': 'MISS' });
 }
