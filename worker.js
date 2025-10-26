@@ -66,9 +66,7 @@ async function queryNeon(env, query, params = []) {
     return result.rows;
   }
 
-  // Simple query without params - just pass the raw SQL string
-  const result = await sql.query(query);
-  return result.rows;
+  return await sql(query, params);
 }
 
 // Use MongoDB Data API instead of the Node.js driver
@@ -233,8 +231,7 @@ async function handleGetEvidence(env) {
 
 // Get metrics
 async function handleGetMetrics(env) {
-  // Return mock metrics if database is not configured
-  if (!env.NEON_API_KEY) {
+  if (!env.NEON_DATABASE_URL) {
     return jsonResponse({
       total_cases: 4,
       solved_cases: 0,
