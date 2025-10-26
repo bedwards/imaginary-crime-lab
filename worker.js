@@ -66,7 +66,8 @@ async function queryNeon(env, query, params = []) {
     return result.rows;
   }
 
-  return await sql(query, params);
+  const result = await sql.query(query, params);
+  return result.rows || result;
 }
 
 // Use MongoDB Data API instead of the Node.js driver
