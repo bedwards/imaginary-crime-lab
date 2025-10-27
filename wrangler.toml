@@ -17,6 +17,9 @@ name = "crime-lab"
 [env.production.vars]
 SHOPIFY_STORE_DOMAIN = "crime-lab.myshopify.com"
 
+[env.production.ai]
+binding = "AI"
+
 # Development environment
 [env.development]
 name = "crime-lab-dev"

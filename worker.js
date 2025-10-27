@@ -64,6 +64,10 @@ export default {
         return await handleOrderWebhook(request, env);
       }
 
+      if (path === '/detective-comment' && request.method === 'POST') {
+        return await handleDetectiveComment(request, env);
+      }
+
       return jsonResponse({ error: 'Not found' }, 404);
 
     } catch (error) {
@@ -75,13 +79,6 @@ export default {
 
 async function queryNeon(env, query, params = []) {
   const sql = neon(env.NEON_DATABASE_URL);
-
-  if (params.length > 0) {
-    // Parameterized query
-    const result = await sql.query(query, params);
-    return result.rows;
-  }
-
   const result = await sql.query(query, params);
   return result.rows || result;
 }
@@ -417,6 +414,43 @@ async function handleOrderWebhook(request, env) {
     evidence_count: evidenceIds.length,
     solved_cases: solvedCaseIds
   });
+}
+
+// Generate detective commentary using Cloudflare Workers AI
+async function handleDetectiveComment(request, env) {
+  const { evidence_id, evidence_name } = await request.json();
+  console.log(`evidence_id=${evidence_id}`);
+
+  // Get case info for context
+  const caseEvidence = await queryNeon(env, `
+    SELECT c.id, c.title, c.case_number 
+    FROM cases c
+    JOIN case_evidence ce ON c.id = ce.case_id
+    WHERE ce.evidence_id = $1
+  `, [evidence_id]);
+
+  console.log('caseEvidence:', caseEvidence, 'type:', typeof caseEvidence);
+  const contextInfo = caseEvidence.length > 0
+    ? `Evidence "${evidence_name}" relates to case "${caseEvidence[0].title}" (${caseEvidence[0].case_number})`
+    : `Evidence "${evidence_name}" added`;
+
+  const prompt = `You are a worn-down, slightly alcoholic police detective who has seen it all. A rookie just added new evidence to a case: ${contextInfo}.
+
+Give a VERY brief (10-15 words max), cheeky one-liner response. Reference classic detective stories, make it specific to the evidence, and act like you've solved harder cases. Be a bit cynical but helpful. Examples:
+- "Ah, fingerprints. Back in '09 we had a case just like this, only bloodier."
+- "Good eye, kid. That security log reminds me of the Blackwood job."
+- "Nice catch, Sherlock. Though the '98 case had six of these."
+
+Your response:`;
+
+  const aiResponse = await env.AI.run('@cf/microsoft/phi-2', {
+    messages: [{ role: 'user', content: prompt }],
+    max_tokens: 64,
+  });
+
+  const comment = aiResponse.response || aiResponse.text || "Not bad, rookie. Keep digging.";
+
+  return jsonResponse({ comment: comment.trim() });
 }
 
 function jsonResponse(data, status = 200, extraHeaders = {}) {
