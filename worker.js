@@ -448,8 +448,8 @@ Your response:`;
     max_tokens: 64,
   });
 
-  const comment = aiResponse.response || aiResponse.text || "Not bad, rookie. Keep digging.";
-
+  let comment = aiResponse.response || "Not bad, rookie. Keep digging.";
+  comment = comment.replace(/^(Assistant:|A:)\s*/i, '').replace(/^["']|["']$/g, '').split(/[.!?]/)[0] + '.';
   return jsonResponse({ comment: comment.trim() });
 }
 
