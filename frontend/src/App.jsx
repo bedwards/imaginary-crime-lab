@@ -271,68 +271,59 @@ export default function CrimeLab() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-cyan-50">
-      {/* Header with Gradient */}
-      <div className="sticky overflow-hidden bg-gradient-to-r from-slate-900 via-blue-900 to-cyan-900 text-white top-0 z-50">
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48cGF0dGVybiBpZD0iZ3JpZCIgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiBwYXR0ZXJuVW5pdHM9InVzZXJTcGFjZU9uVXNlIj48cGF0aCBkPSJNIDQwIDAgTCAwIDAgMCA0MCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJyZ2JhKDI1NSwyNTUsMjU1LDAuMDUpIiBzdHJva2Utd2lkdGg9IjEiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjZ3JpZCkiLz48L3N2Zz4=')] opacity-20"></div>
-        <div className="relative max-w-7xl mx-auto p-8">
-          <div className="flex items-center gap-4 mb-3">
-            <div className="text-6xl">🔬</div>
-            <div>
-              <h1 className="text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-200 via-cyan-200 to-teal-200 leading-tight">
-                Imaginary Crime Lab
-              </h1>
-              <p className="text-cyan-200 text-lg mt-2">Cases solve themselves when you collect all the evidence</p>
+
+      <div className="sticky top-0 z-50">
+
+        {/* Header with Gradient */}
+        <div className="overflow-hidden bg-gradient-to-r from-slate-900 via-blue-900 to-cyan-900 text-white">
+          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48cGF0dGVybiBpZD0iZ3JpZCIgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiBwYXR0ZXJuVW5pdHM9InVzZXJTcGFjZU9uVXNlIj48cGF0aCBkPSJNIDQwIDAgTCAwIDAgMCA0MCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJyZ2JhKDI1NSwyNTUsMjU1LDAuMDUpIiBzdHJva2Utd2lkdGg9IjEiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjZ3JpZCkiLz48L3N2Zz4=')] opacity-20"></div>
+          <div className="relative max-w-7xl mx-auto p-8">
+            <div className="flex items-center gap-4 mb-3">
+              <div className="text-6xl">🔬</div>
+              <div>
+                <h1 className="text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-200 via-cyan-200 to-teal-200 leading-tight">
+                  Imaginary Crime Lab
+                </h1>
+                <p className="text-cyan-200 text-lg mt-2">Cases solve themselves when you collect all the evidence</p>
+              </div>
+            </div>
+            <div className="mt-6 text-xs text-cyan-300/70 font-mono bg-black/20 backdrop-blur-sm rounded-lg px-4 py-2 inline-block transition-all duration-300 animate-pulse shadow-[0_0_30px_rgba(6,182,212,0.9)] ring-2 ring-cyan-400/50">
+              {detectiveComment}
             </div>
           </div>
-
-          {/* <div className="mt-6 text-xs text-cyan-300/70 font-mono bg-black/20 backdrop-blur-sm rounded-lg px-4 py-2 inline-block transition-all duration-300 animate-pulse">
-            {detectiveComment}
-          </div> */}
-
-          {/* <div className="className= mt-6 text-xs text-cyan-300/70 font-mono bg-black/20 backdrop-blur-sm rounded-lg px-4 py-2 inline-block transition-all duration-300 shadow-[0_0_15px_rgba(34,211,238,0.5)]">
-            {detectiveComment}
-          </div> */}
-
-          <div className="mt-6 text-xs text-cyan-300/70 font-mono bg-black/20 backdrop-blur-sm rounded-lg px-4 py-2 inline-block transition-all duration-300 animate-pulse shadow-[0_0_30px_rgba(6,182,212,0.9)] ring-2 ring-cyan-400/50">
-            {detectiveComment}
-          </div>
-
-          {/* <div className="mt-6 text-xs text-cyan-300 font-mono bg-black/30 backdrop-blur-sm rounded-lg px-4 py-2 inline-block transition-all duration-500 hover:scale-105 shadow-[0_0_25px_rgba(34,211,238,0.8),0_0_50px_rgba(34,211,238,0.4)] border border-cyan-400/60 animate-bounce">
-            {detectiveComment}
-          </div> */}
-
         </div>
-      </div>
 
-      {/* Navigation */}
-      <div className="bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-32 z-40 shadow-sm">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center gap-3">
-          {[
-            { id: 'cases', label: 'Active Cases', icon: '🔍' },
-            { id: 'evidence', label: 'Evidence Store', icon: '📦' },
-            { id: 'internals', label: 'System Internals', icon: '⚙️' }
-          ].map(tab => (
+        {/* Navigation */}
+        <div className="bg-white/80 backdrop-blur-md border-b border-slate-200 shadow-sm">
+          <div className="max-w-7xl mx-auto px-6 py-4 flex items-center gap-3">
+            {[
+              { id: 'cases', label: 'Active Cases', icon: '🔍' },
+              { id: 'evidence', label: 'Evidence Store', icon: '📦' },
+              { id: 'internals', label: 'System Internals', icon: '⚙️' }
+            ].map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveView(tab.id)}
+                className={`px-5 py-2.5 rounded-xl font-semibold transition-all duration-200 flex items-center gap-2 ${activeView === tab.id
+                  ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-lg scale-105'
+                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  }`}
+              >
+                <span>{tab.icon}</span>
+                {tab.label}
+              </button>
+            ))}
+            <div className="flex-1" />
             <button
-              key={tab.id}
-              onClick={() => setActiveView(tab.id)}
-              className={`px-5 py-2.5 rounded-xl font-semibold transition-all duration-200 flex items-center gap-2 ${activeView === tab.id
-                ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-lg scale-105'
-                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                }`}
+              onClick={() => setShowCart(!showCart)}
+              className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-green-600 to-emerald-600 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-200 flex items-center gap-2 hover:scale-105"
             >
-              <span>{tab.icon}</span>
-              {tab.label}
+              <ShoppingCart size={20} />
+              Cart ({cart.length})
             </button>
-          ))}
-          <div className="flex-1" />
-          <button
-            onClick={() => setShowCart(!showCart)}
-            className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-green-600 to-emerald-600 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-200 flex items-center gap-2 hover:scale-105"
-          >
-            <ShoppingCart size={20} />
-            Cart ({cart.length})
-          </button>
+          </div>
         </div>
+
       </div>
 
       {/* Main Content */}
