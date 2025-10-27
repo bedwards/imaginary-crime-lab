@@ -289,9 +289,17 @@ export default function CrimeLab() {
             {detectiveComment}
           </div> */}
 
-          <div className="className= mt-6 text-xs text-cyan-300/70 font-mono bg-black/20 backdrop-blur-sm rounded-lg px-4 py-2 inline-block transition-all duration-300 shadow-[0_0_15px_rgba(34,211,238,0.5)]">
+          {/* <div className="className= mt-6 text-xs text-cyan-300/70 font-mono bg-black/20 backdrop-blur-sm rounded-lg px-4 py-2 inline-block transition-all duration-300 shadow-[0_0_15px_rgba(34,211,238,0.5)]">
+            {detectiveComment}
+          </div> */}
+
+          <div className="mt-6 text-xs text-cyan-300/70 font-mono bg-black/20 backdrop-blur-sm rounded-lg px-4 py-2 inline-block transition-all duration-300 animate-pulse shadow-[0_0_30px_rgba(6,182,212,0.9)] ring-2 ring-cyan-400/50">
             {detectiveComment}
           </div>
+
+          {/* <div className="mt-6 text-xs text-cyan-300 font-mono bg-black/30 backdrop-blur-sm rounded-lg px-4 py-2 inline-block transition-all duration-500 hover:scale-105 shadow-[0_0_25px_rgba(34,211,238,0.8),0_0_50px_rgba(34,211,238,0.4)] border border-cyan-400/60 animate-bounce">
+            {detectiveComment}
+          </div> */}
 
         </div>
       </div>
