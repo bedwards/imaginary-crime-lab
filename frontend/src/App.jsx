@@ -77,7 +77,7 @@ export default function CrimeLab() {
         setDetectiveComment(data.comment);
         setTimeout(() => {
           setDetectiveComment('React (GitHub Pages) → Workers (Edge) → Neon (Postgres) + MongoDB (Live) + Shopify (Commerce)');
-        }, 8000);
+        }, 16000);
       })
       .catch(err => console.error('Detective comment failed:', err));
 
@@ -284,9 +284,24 @@ export default function CrimeLab() {
               <p className="text-cyan-200 text-lg mt-2">Cases solve themselves when you collect all the evidence</p>
             </div>
           </div>
-          <div className="mt-6 text-xs text-cyan-300/70 font-mono bg-black/20 backdrop-blur-sm rounded-lg px-4 py-2 inline-block transition-all duration-300">
+
+          {/* <div className="mt-6 text-xs text-cyan-300/70 font-mono bg-black/20 backdrop-blur-sm rounded-lg px-4 py-2 inline-block transition-all duration-300">
+            {detectiveComment}
+          </div> */}
+
+          {/* <div className="mt-6 text-xs text-cyan-300/70 font-mono bg-black/20 backdrop-blur-sm rounded-lg px-4 py-2 inline-block transition-all duration-300">
+            {detectiveComment}
+          </div> */}
+
+          <div className="mt-6 text-xs text-cyan-300/70 font-mono bg-black/20 backdrop-blur-sm rounded-lg px-4 py-2 inline-block transition-all duration-300 animate-pulse">
             {detectiveComment}
           </div>
+
+          {/* <div className="className="mt-6 text-xs text-cyan-300/70 font-mono bg-black/20 backdrop-blur-sm rounded-lg px-4 py-2 inline-block transition-all duration-300 shadow-[0_0_15px_rgba(34,211,238,0.5)]"">
+            {detectiveComment}
+          </div> */}
+
+
         </div>
       </div>
 
