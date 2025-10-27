@@ -77,7 +77,7 @@ export default function CrimeLab() {
         setDetectiveComment(data.comment);
         setTimeout(() => {
           setDetectiveComment('React (GitHub Pages) → Workers (Edge) → Neon (Postgres) + MongoDB (Live) + Shopify (Commerce)');
-        }, 16000);
+        }, 30000);
       })
       .catch(err => console.error('Detective comment failed:', err));
 
