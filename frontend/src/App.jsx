@@ -14,6 +14,7 @@ export default function CrimeLab() {
   const [liveConnections, setLiveConnections] = useState(0);
   const [showCart, setShowCart] = useState(false);
   const [purchasedEvidence, setPurchasedEvidence] = useState([]);
+  const [detectiveComment, setDetectiveComment] = useState('React (GitHub Pages) → Workers (Edge) → Neon (Postgres) + MongoDB (Live) + Shopify (Commerce)');
 
   // Remove purchased items from evidence pane
   const availableEvidence = evidence.filter(e => !purchasedEvidence.includes(e.id));
@@ -64,6 +65,22 @@ export default function CrimeLab() {
     const item = evidence.find(e => e.id === evidenceId);
     if (!item) return;
     setCart(prev => [...prev, item]);
+
+    // Fetch detective comment
+    fetch(`${API_BASE}/detective-comment`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ evidence_id: evidenceId, evidence_name: item.name })
+    })
+      .then(r => r.json())
+      .then(data => {
+        setDetectiveComment(data.comment);
+        setTimeout(() => {
+          setDetectiveComment('React (GitHub Pages) → Workers (Edge) → Neon (Postgres) + MongoDB (Live) + Shopify (Commerce)');
+        }, 8000);
+      })
+      .catch(err => console.error('Detective comment failed:', err));
+
     await fetch(`${API_BASE}/activity`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -267,8 +284,8 @@ export default function CrimeLab() {
               <p className="text-cyan-200 text-lg mt-2">Cases solve themselves when you collect all the evidence</p>
             </div>
           </div>
-          <div className="mt-6 text-xs text-cyan-300/70 font-mono bg-black/20 backdrop-blur-sm rounded-lg px-4 py-2 inline-block">
-            React (GitHub Pages) → Workers (Edge) → Neon (Postgres) + MongoDB (Live) + Shopify (Commerce)
+          <div className="mt-6 text-xs text-cyan-300/70 font-mono bg-black/20 backdrop-blur-sm rounded-lg px-4 py-2 inline-block transition-all duration-300">
+            {detectiveComment}
           </div>
         </div>
       </div>
