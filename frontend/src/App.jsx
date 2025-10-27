@@ -204,29 +204,6 @@ export default function CrimeLab() {
             </div>
           </div>
 
-          <div className="bg-gradient-to-br from-purple-50 to-pink-100 border-2 border-purple-300 rounded-2xl p-6 shadow-xl">
-            <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-purple-900">
-              <Zap size={24} />
-              Live Activity (MongoDB Atlas)
-            </h3>
-            <div className="bg-white/70 backdrop-blur-sm rounded-xl p-4 mb-4">
-              <div className="text-sm text-purple-700 mb-1">Active Connections</div>
-              <div className="text-4xl font-bold text-purple-800 flex items-center gap-2">
-                {liveConnections}
-                <span className="w-3 h-3 bg-purple-500 rounded-full animate-pulse"></span>
-              </div>
-            </div>
-            <div className="space-y-2 max-h-64 overflow-y-auto">
-              {activities.map((activity, i) => (
-                <div key={i} className="bg-white/80 backdrop-blur-sm p-3 rounded-xl text-xs font-mono border border-purple-200">
-                  <span className="text-purple-600">{new Date(activity.timestamp).toLocaleTimeString()}</span>
-                  {' · '}
-                  <span className="font-semibold text-purple-900">{activity.type}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
           <div className="bg-gradient-to-br from-amber-50 to-yellow-100 border-2 border-amber-300 rounded-2xl p-6 shadow-xl">
             <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-amber-900">
               <FileText size={24} />
