@@ -305,7 +305,7 @@ export default function CrimeLab() {
       </div>
 
       {/* Navigation */}
-      <div className="bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-50 shadow-sm">
+      <div className="bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-32 z-40 shadow-sm">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center gap-3">
           {[
             { id: 'cases', label: 'Active Cases', icon: '🔍' },
