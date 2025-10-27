@@ -445,11 +445,13 @@ Your response:`;
 
   const aiResponse = await env.AI.run('@cf/microsoft/phi-2', {
     messages: [{ role: 'user', content: prompt }],
-    max_tokens: 64,
+    max_tokens: 128,
   });
 
   let comment = aiResponse.response || "Not bad, rookie. Keep digging.";
-  comment = comment.replace(/^(Assistant:|A:)\s*/i, '').replace(/^["']|["']$/g, '').split(/[.!?]/)[0] + '.';
+  comment = comment.replace(/^(Assistant:|A:)\s*/i, '').replace(/^["']|["']$/g, '');
+  const sentences = comment.match(/[^.!?]+[.!?]/g);
+  comment = sentences ? sentences.slice(0, 2).join(' ') : comment;
   return jsonResponse({ comment: comment.trim() });
 }
 
