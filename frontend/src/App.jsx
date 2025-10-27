@@ -285,22 +285,13 @@ export default function CrimeLab() {
             </div>
           </div>
 
-          {/* <div className="mt-6 text-xs text-cyan-300/70 font-mono bg-black/20 backdrop-blur-sm rounded-lg px-4 py-2 inline-block transition-all duration-300">
+          {/* <div className="mt-6 text-xs text-cyan-300/70 font-mono bg-black/20 backdrop-blur-sm rounded-lg px-4 py-2 inline-block transition-all duration-300 animate-pulse">
             {detectiveComment}
           </div> */}
 
-          {/* <div className="mt-6 text-xs text-cyan-300/70 font-mono bg-black/20 backdrop-blur-sm rounded-lg px-4 py-2 inline-block transition-all duration-300">
-            {detectiveComment}
-          </div> */}
-
-          <div className="mt-6 text-xs text-cyan-300/70 font-mono bg-black/20 backdrop-blur-sm rounded-lg px-4 py-2 inline-block transition-all duration-300 animate-pulse">
+          <div className="className= mt-6 text-xs text-cyan-300/70 font-mono bg-black/20 backdrop-blur-sm rounded-lg px-4 py-2 inline-block transition-all duration-300 shadow-[0_0_15px_rgba(34,211,238,0.5)]">
             {detectiveComment}
           </div>
-
-          {/* <div className="className="mt-6 text-xs text-cyan-300/70 font-mono bg-black/20 backdrop-blur-sm rounded-lg px-4 py-2 inline-block transition-all duration-300 shadow-[0_0_15px_rgba(34,211,238,0.5)]"">
-            {detectiveComment}
-          </div> */}
-
 
         </div>
       </div>
@@ -373,58 +364,60 @@ export default function CrimeLab() {
       </div>
 
       {/* Cart Sidebar */}
-      {showCart && (
-        <div className="fixed bottom-8 right-8 bg-white/95 backdrop-blur-lg border-2 border-blue-300 rounded-2xl shadow-2xl p-6 w-96 animate-in slide-in-from-bottom">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="font-bold text-xl text-slate-800">Cart Summary</h3>
-            <button
-              onClick={() => setShowCart(false)}
-              className="text-slate-400 hover:text-slate-600 transition-colors"
-            >
-              ✕
-            </button>
-          </div>
-
-          {cart.length === 0 ? (
-            <div className="text-center py-8">
-              <ShoppingCart size={48} className="mx-auto text-slate-300 mb-3" />
-              <p className="text-slate-500">Your cart is empty</p>
-              <p className="text-sm text-slate-400 mt-2">Add evidence from the Evidence Store</p>
+      {
+        showCart && (
+          <div className="fixed bottom-8 right-8 bg-white/95 backdrop-blur-lg border-2 border-blue-300 rounded-2xl shadow-2xl p-6 w-96 animate-in slide-in-from-bottom">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-bold text-xl text-slate-800">Cart Summary</h3>
+              <button
+                onClick={() => setShowCart(false)}
+                className="text-slate-400 hover:text-slate-600 transition-colors"
+              >
+                ✕
+              </button>
             </div>
-          ) : (
-            <>
-              <div className="space-y-2 mb-6 max-h-48 overflow-y-auto">
-                {cart.map((item, i) => (
-                  <div key={i} className="flex justify-between items-center text-sm bg-slate-50 p-2 rounded-lg">
-                    <span className="text-slate-700 flex-1">{item.name}</span>
-                    <span className="font-bold text-blue-600 mr-2">${item.price}</span>
-                    <button
-                      onClick={() => removeFromCart(i)}
-                      className="text-red-500 hover:text-red-700 text-xs px-2 py-1"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                ))}
+
+            {cart.length === 0 ? (
+              <div className="text-center py-8">
+                <ShoppingCart size={48} className="mx-auto text-slate-300 mb-3" />
+                <p className="text-slate-500">Your cart is empty</p>
+                <p className="text-sm text-slate-400 mt-2">Add evidence from the Evidence Store</p>
               </div>
-              <div className="border-t pt-4">
-                <div className="flex justify-between font-bold mb-4 text-lg">
-                  <span className="text-slate-800">Total</span>
-                  <span className="bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
-                    ${cart.reduce((sum, item) => sum + parseFloat(item.price), 0).toFixed(2)}
-                  </span>
+            ) : (
+              <>
+                <div className="space-y-2 mb-6 max-h-48 overflow-y-auto">
+                  {cart.map((item, i) => (
+                    <div key={i} className="flex justify-between items-center text-sm bg-slate-50 p-2 rounded-lg">
+                      <span className="text-slate-700 flex-1">{item.name}</span>
+                      <span className="font-bold text-blue-600 mr-2">${item.price}</span>
+                      <button
+                        onClick={() => removeFromCart(i)}
+                        className="text-red-500 hover:text-red-700 text-xs px-2 py-1"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
                 </div>
-                <button
-                  onClick={purchaseCart}
-                  className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white py-4 rounded-xl font-bold shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"
-                >
-                  Purchase & Solve Cases
-                </button>
-              </div>
-            </>
-          )}
-        </div>
-      )}
-    </div>
+                <div className="border-t pt-4">
+                  <div className="flex justify-between font-bold mb-4 text-lg">
+                    <span className="text-slate-800">Total</span>
+                    <span className="bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
+                      ${cart.reduce((sum, item) => sum + parseFloat(item.price), 0).toFixed(2)}
+                    </span>
+                  </div>
+                  <button
+                    onClick={purchaseCart}
+                    className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white py-4 rounded-xl font-bold shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"
+                  >
+                    Purchase & Solve Cases
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        )
+      }
+    </div >
   );
 }
